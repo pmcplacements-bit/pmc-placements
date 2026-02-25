@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Monitoring | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+    .hover-lift { transition: all 0.3s; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Enhanced Navbar -->
+  <nav class="bg-blue-800 text-white shadow-2xl">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="bg-white bg-opacity-20 rounded-lg p-2">
+            <span class="material-icons text-3xl">monitor</span>
+          </div>
+          <div>
+            <h1 class="font-bold text-2xl">Live Monitoring</h1>
+            <p class="text-xs text-blue-100">Real-Time Exam Tracking</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="hidden md:flex items-center gap-2 bg-green-500 bg-opacity-90 rounded-lg px-4 py-2">
+            <span class="material-icons text-sm pulse-dot">fiber_manual_record</span>
+            <span class="text-sm font-semibold">Auto-Refresh: 10s</span>
+          </div>
+          <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-800 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-lg">
+            <span class="material-icons text-sm">dashboard</span>
+            <span>Dashboard</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+        <span class="material-icons text-4xl text-red-600">visibility</span>
+        Active Exams
+      </h2>
+      <button onclick="loadMonitoring()" class="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition">
+        <span class="material-icons text-sm">refresh</span>
+        <span class="text-sm font-semibold">Refresh Now</span>
+      </button>
+    </div>
+    <div id="monitoringPanel" class="space-y-6"></div>
+  </div>
+
+  <script>
+    // Initialize Supabase client (check if already exists to avoid redeclaration)
+    if (!window.supabaseClient) {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    }
+    async function loadMonitoring() {
+      const { data: exams } = await window.supabaseClient.from('exams').select('id,title,date,duration');
+      
+      if (!exams || exams.length === 0) {
+        document.getElementById('monitoringPanel').innerHTML = '<div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center"><span class="material-icons text-6xl text-gray-400 mb-2">monitor_heart</span><p class="text-gray-500 text-lg">No active exams to monitor</p></div>';
+        return;
+      }
+      
+      let html = '';
+      for (const exam of exams) {
+        const { data: assignments } = await window.supabaseClient.from('student_exam_map').select('student_id').eq('exam_id', exam.id);
+        const { data: submissions } = await window.supabaseClient.from('submissions').select('student_id').eq('exam_id', exam.id);
+        
+        const submittedIds = submissions ? submissions.map(s => s.student_id) : [];
+        const activeStudents = assignments ? assignments.filter(a => !submittedIds.includes(a.student_id)) : [];
+        
+        html += `<div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div class="bg-red-600 text-white p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="bg-white bg-opacity-20 rounded-xl p-3">
+                  <span class="material-icons text-4xl">assignment</span>
+                </div>
+                <div>
+                  <h3 class="text-2xl font-bold">${exam.title}</h3>
+                  <p class="text-red-100 text-sm">
+                    ${exam.date ? new Date(exam.date).toLocaleString() : 'No date set'} | ${exam.duration ? exam.duration + ' min' : 'No duration'}
+                  </p>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-3xl font-bold">${activeStudents.length}</div>
+                <div class="text-xs text-red-100">Active Now</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            ${activeStudents.length === 0 ? 
+              '<div class="text-gray-500 text-center py-4">No students currently taking this exam</div>' : 
+              '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' + await renderStudents(activeStudents, exam.id) + '</div>'
+            }
+          </div>
+        </div>`;
+      }
+      document.getElementById('monitoringPanel').innerHTML = html;
+    }
+    
+    async function renderStudents(students, examId) {
+      let html = '';
+      for (const s of students) {
+        const { data: student } = await window.supabaseClient.from('students').select('name,email,reg_no').eq('id', s.student_id).single();
+        if (!student) continue;
+        
+        // Get violations (if table exists)
+        let violationCount = 0;
+        let violationDetails = [];
+        try {
+          const { data: violations } = await window.supabaseClient.from('violations').select('reason,timestamp').eq('student_id', s.student_id).eq('exam_id', examId);
+          if (violations) {
+            violationCount = violations.length;
+            violationDetails = violations;
+          }
+        } catch {}
+        
+        html += `<div class="bg-gray-50 rounded-xl p-4 border-2 ${violationCount > 0 ? 'border-red-300' : 'border-gray-200'} hover-lift">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="bg-green-500 rounded-full w-3 h-3 pulse-dot"></div>
+              <div>
+                <h4 class="font-bold text-gray-800">${student.name}</h4>
+                <p class="text-xs text-gray-500">${student.email}</p>
+                <p class="text-xs text-gray-400">${student.reg_no}</p>
+              </div>
+            </div>
+            ${violationCount > 0 ? `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">${violationCount} Violations</span>` : '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">Clean</span>'}
+          </div>
+          ${violationCount > 0 ? `<div class="mb-3 space-y-1">${violationDetails.map(v => `<div class="text-xs text-red-600 flex items-center gap-1"><span class="material-icons text-xs">warning</span>${v.reason} (${new Date(v.timestamp).toLocaleTimeString()})</div>`).join('')}</div>` : ''}
+          <button class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2 text-sm font-semibold" onclick="forceSubmitExam('${s.student_id}','${examId}')">
+            <span class="material-icons text-sm">stop</span>
+            Force Submit
+          </button>
+        </div>`;
+      }
+      return html;
+    }
+    
+    window.forceSubmitExam = async (studentId, examId) => {
+      if (!confirm('Are you sure you want to forcibly submit this exam? This action cannot be undone.')) return;
+      
+      try {
+        await window.supabaseClient.from('submissions').insert({ 
+          student_id: studentId, 
+          exam_id: examId, 
+          score: 0,
+          status: 'Force Submitted',
+          answers: JSON.stringify({})
+        });
+        alert('Exam forcibly submitted for student.');
+        loadMonitoring();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    };
+    
+    loadMonitoring();
+    setInterval(loadMonitoring, 10000); // Refresh every 10s
+  </script>
+</body>
+</html>

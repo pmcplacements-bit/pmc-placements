@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Submission Summary | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-green-50 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 md:p-12 w-full max-w-2xl fade-in">
+    <div class="text-center mb-8">
+      <div class="inline-block bg-green-100 rounded-full p-4 mb-4">
+        <span class="material-icons text-green-600" style="font-size: 64px;">assignment_turned_in</span>
+      </div>
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">Submission Summary</h1>
+      <p class="text-gray-600">Review your answers before final submission</p>
+    </div>
+    
+    <div id="summaryPanel" class="mb-8">
+      <div class="text-center text-gray-500">
+        <span class="material-icons animate-spin text-blue-600" style="font-size: 48px;">refresh</span>
+        <p class="mt-2">Loading summary...</p>
+      </div>
+    </div>
+    
+    <div class="flex gap-4">
+      <button id="backBtn" class="flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-bold hover:bg-gray-300 transition flex items-center justify-center gap-2">
+        <span class="material-icons">arrow_back</span>
+        <span>Back to Exam</span>
+      </button>
+      <button id="submitBtn" class="flex-1 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
+        <span class="material-icons">send</span>
+        <span>Submit Exam</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase client (check if already exists to avoid redeclaration)
+    if (!window.supabaseClient) {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    }
+
+    async function renderSubmitSummary() {
+      try {
+        const examId = localStorage.getItem('exam_id');
+        const answersStr = localStorage.getItem('exam_answers');
+        
+        if (!examId || !answersStr) {
+          document.getElementById('summaryPanel').innerHTML = '<div class="text-center text-red-600">No exam data found</div>';
+          return;
+        }
+
+        const answers = JSON.parse(answersStr);
+        const { data: questions } = await window.supabaseClient.from('questions').select('*').eq('exam_id', examId);
+        
+        const answered = Object.keys(answers).length;
+        const unanswered = questions.length - answered;
+
+        let html = `
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-100 rounded-xl p-4 text-center">
+              <div class="text-3xl font-bold text-blue-600">${questions.length}</div>
+              <div class="text-sm text-gray-600">Total Questions</div>
+            </div>
+            <div class="bg-green-100 rounded-xl p-4 text-center">
+              <div class="text-3xl font-bold text-green-600">${answered}</div>
+              <div class="text-sm text-gray-600">Answered</div>
+            </div>
+            <div class="bg-${unanswered > 0 ? 'yellow' : 'gray'}-100 rounded-xl p-4 text-center">
+              <div class="text-3xl font-bold text-${unanswered > 0 ? 'yellow' : 'gray'}-600">${unanswered}</div>
+              <div class="text-sm text-gray-600">Unanswered</div>
+            </div>
+          </div>`;
+
+        if (unanswered > 0) {
+          html += `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-lg">
+            <div class="flex items-start gap-2">
+              <span class="material-icons text-yellow-600">warning</span>
+              <div>
+                <h3 class="font-bold text-yellow-800 mb-1">Unanswered Questions</h3>
+                <p class="text-sm text-yellow-700">You have ${unanswered} unanswered question(s). Consider reviewing them before submission.</p>
+              </div>
+            </div>
+          </div>`;
+        }
+
+        html += '<div class="border-t pt-4"><h3 class="font-bold text-gray-800 mb-4">Question Status:</h3><div class="grid grid-cols-10 gap-2">';
+        
+        questions.forEach((q, i) => {
+          const status = answers[q.id] ? 'green' : 'gray';
+          html += `<div class="w-10 h-10 bg-${status}-100 border-2 border-${status}-300 text-${status}-700 rounded-lg font-bold flex items-center justify-center">${i+1}</div>`;
+        });
+        
+        html += '</div></div>';
+        
+        document.getElementById('summaryPanel').innerHTML = html;
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('summaryPanel').innerHTML = `<div class="text-center text-red-600">Error loading summary: ${error.message}</div>`;
+      }
+    }
+
+    renderSubmitSummary();
+    
+    document.getElementById('backBtn').onclick = () => {
+      window.location.href = '/exam_fullscreen';
+    };
+    
+    document.getElementById('submitBtn').onclick = () => {
+      if (confirm('Are you sure you want to submit? You cannot make changes after submission.')) {
+        window.location.href = '/student_dashboard';
+      }
+    };
+  </script>
+</body>
+</html>

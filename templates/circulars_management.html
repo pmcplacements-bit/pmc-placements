@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circulars Management | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+    .hover-lift { transition: all 0.3s; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 min-h-screen">
+  <!-- Navbar -->
+  <nav class="bg-gradient-to-r from-blue-900 to-purple-900 text-white shadow-2xl">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <a href="/admin_dashboard" class="bg-white bg-opacity-20 rounded-lg p-2 hover:bg-opacity-30 transition">
+            <span class="material-icons">arrow_back</span>
+          </a>
+          <div>
+            <h1 class="font-bold text-2xl">Circulars Management</h1>
+            <p class="text-xs text-blue-100">Create and publish circulars to students</p>
+          </div>
+        </div>
+        <button id="logoutBtn" class="bg-red-500 px-6 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-2">
+          <span class="material-icons text-sm">logout</span>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Add Circular Button -->
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+        <span class="material-icons text-4xl text-purple-600">campaign</span>
+        All Circulars
+      </h2>
+      <button onclick="openCreateModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition flex items-center gap-2 shadow-lg">
+        <span class="material-icons">add_circle</span>
+        <span>Create Circular</span>
+      </button>
+    </div>
+
+    <!-- Circulars List -->
+    <div id="circularsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="col-span-3 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2">
+        <span class="material-icons animate-spin">refresh</span>
+        <span>Loading circulars...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Circular Modal -->
+  <div id="circularModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8 max-h-full" style="max-height: calc(100vh - 4rem);">
+      <div class="sticky top-0 bg-gradient-to-r from-blue-900 to-purple-900 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+        <h3 class="text-2xl font-bold" id="modalTitle">Create New Circular</h3>
+        <button onclick="closeModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
+          <span class="material-icons text-3xl">close</span>
+        </button>
+      </div>
+      
+      <form id="circularForm" class="p-6 overflow-y-auto" style="max-height: calc(100vh - 12rem);">
+        <input type="hidden" id="circularId">
+        
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Circular Title *</label>
+          <input type="text" id="circularTitle" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition" placeholder="e.g., Important Placement Notice">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
+          <textarea id="circularDescription" required rows="5" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition" placeholder="Enter circular details..."></textarea>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
+            <select id="circularCategory" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition">
+              <option value="">Select Category</option>
+              <option value="placement">Placement</option>
+              <option value="academic">Academic</option>
+              <option value="examination">Examination</option>
+              <option value="general">General</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
+            <select id="circularPriority" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Valid Until (Optional)</label>
+          <input type="date" id="validUntil" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition">
+          <p class="text-xs text-gray-500 mt-1">Circular will be hidden after this date. Leave empty for no expiry.</p>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Image/Document (Optional)</label>
+          <input type="file" id="circularFile" accept="image/*,.pdf" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition">
+          <p class="text-xs text-gray-500 mt-1">Supported: JPG, PNG, PDF (Max 5MB)</p>
+          <div id="currentFile" class="mt-2"></div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Target Audience *</label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="targetAudience" value="all" checked class="w-4 h-4 text-purple-600">
+              <span class="text-gray-700">All Students</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="targetAudience" value="year" class="w-4 h-4 text-purple-600">
+              <span class="text-gray-700">Specific Year</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="targetAudience" value="dept" class="w-4 h-4 text-purple-600">
+              <span class="text-gray-700">Specific Department</span>
+            </label>
+          </div>
+          
+          <div id="yearFilter" class="hidden mt-3">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Select Year</label>
+            <select id="targetYear" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none">
+              <option value="">Select Year</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+            </select>
+          </div>
+          
+          <div id="deptFilter" class="hidden mt-3">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Select Department</label>
+            <select id="targetDept" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none">
+              <option value="">Select Department</option>
+              <option value="CSE">Computer Science</option>
+              <option value="ECE">Electronics</option>
+              <option value="EEE">Electrical</option>
+              <option value="MECH">Mechanical</option>
+              <option value="CIVIL">Civil</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="isActive" checked class="w-5 h-5 text-purple-600 rounded">
+            <span class="text-gray-700 font-semibold">Publish immediately (visible to students)</span>
+          </label>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+          <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition">Cancel</button>
+          <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition flex items-center justify-center gap-2">
+            <span class="material-icons">save</span>
+            <span>Save Circular</span>
+          </button>
+        </div>
+        
+        <div id="formMessage" class="mt-4"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase
+    if (!window.supabaseClient) {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    }
+
+    document.getElementById('logoutBtn').onclick = () => window.location.href = '/logout';
+
+    // Target audience radio handlers
+    document.querySelectorAll('input[name="targetAudience"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.getElementById('yearFilter').classList.add('hidden');
+        document.getElementById('deptFilter').classList.add('hidden');
+        
+        if (this.value === 'year') {
+          document.getElementById('yearFilter').classList.remove('hidden');
+        } else if (this.value === 'dept') {
+          document.getElementById('deptFilter').classList.remove('hidden');
+        }
+      });
+    });
+
+    let editingCircularId = null;
+
+    function openCreateModal() {
+      editingCircularId = null;
+      document.getElementById('modalTitle').textContent = 'Create New Circular';
+      document.getElementById('circularForm').reset();
+      document.getElementById('circularId').value = '';
+      document.getElementById('currentFile').innerHTML = '';
+      document.getElementById('formMessage').innerHTML = '';
+      document.getElementById('yearFilter').classList.add('hidden');
+      document.getElementById('deptFilter').classList.add('hidden');
+      document.getElementById('circularModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('circularModal').classList.add('hidden');
+      editingCircularId = null;
+    }
+
+    async function loadCirculars() {
+      try {
+        const { data: circulars, error } = await window.supabaseClient
+          .from('circulars')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!circulars || circulars.length === 0) {
+          document.getElementById('circularsList').innerHTML = `
+            <div class="col-span-3 bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+              <span class="material-icons text-6xl text-gray-400 mb-2">campaign</span>
+              <p class="text-gray-500 text-lg">No circulars created yet</p>
+              <p class="text-gray-400 text-sm mt-2">Click "Create Circular" to publish your first circular</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        for (const circular of circulars) {
+          const priorityColors = {
+            'normal': { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
+            'high': { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-400' },
+            'urgent': { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-400' }
+          };
+          const priority = priorityColors[circular.priority] || priorityColors['normal'];
+          
+          const categoryColors = {
+            'placement': 'bg-blue-100 text-blue-700',
+            'academic': 'bg-green-100 text-green-700',
+            'examination': 'bg-purple-100 text-purple-700',
+            'general': 'bg-gray-100 text-gray-700',
+            'urgent': 'bg-red-100 text-red-700'
+          };
+          const categoryColor = categoryColors[circular.category] || categoryColors['general'];
+
+          const createdDate = new Date(circular.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+          html += `
+            <div class="bg-white rounded-xl shadow-lg hover-lift overflow-hidden border-l-4 ${priority.border}">
+              ${circular.file_url ? `
+                <div class="relative h-48 bg-gray-200">
+                  ${circular.file_type === 'pdf' ? `
+                    <div class="h-full flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
+                      <span class="material-icons text-red-600" style="font-size: 80px;">picture_as_pdf</span>
+                    </div>
+                  ` : `
+                    <img src="${circular.file_url}" alt="${circular.title}" class="w-full h-full object-cover">
+                  `}
+                  <div class="absolute top-2 right-2 ${priority.bg} ${priority.text} px-3 py-1 rounded-full text-xs font-bold uppercase">${circular.priority}</div>
+                </div>
+              ` : ''}
+              
+              <div class="p-5">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="${categoryColor} px-3 py-1 rounded-full text-xs font-semibold uppercase">${circular.category}</span>
+                      ${circular.is_active ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Active</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold">Draft</span>'}
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">${circular.title}</h3>
+                  </div>
+                </div>
+                
+                <p class="text-gray-600 text-sm mb-4 line-clamp-3">${circular.description}</p>
+                
+                <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                  <span class="material-icons text-xs">calendar_today</span>
+                  <span>${createdDate}</span>
+                  ${circular.target_year ? `<span class="ml-2">• Year ${circular.target_year}</span>` : ''}
+                  ${circular.target_dept ? `<span class="ml-2">• ${circular.target_dept}</span>` : ''}
+                  ${!circular.target_year && !circular.target_dept ? '<span class="ml-2">• All Students</span>' : ''}
+                </div>
+                ${circular.valid_until ? `
+                  <div class="flex items-center gap-2 text-xs mb-4 ${new Date(circular.valid_until) < new Date() ? 'text-red-600' : 'text-orange-600'}">
+                    <span class="material-icons text-xs">event_available</span>
+                    <span>Valid till ${new Date(circular.valid_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    ${new Date(circular.valid_until) < new Date() ? '<span class="ml-2 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">Expired</span>' : ''}
+                  </div>
+                ` : ''}
+                
+                <div class="flex gap-2">
+                  ${circular.file_url ? `
+                    <a href="${circular.file_url}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition text-center flex items-center justify-center gap-1">
+                      <span class="material-icons text-sm">download</span>
+                      <span class="text-sm font-semibold">View</span>
+                    </a>
+                  ` : ''}
+                  <button onclick="editCircular('${circular.id}')" class="flex-1 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition flex items-center justify-center gap-1">
+                    <span class="material-icons text-sm">edit</span>
+                    <span class="text-sm font-semibold">Edit</span>
+                  </button>
+                  <button onclick="deleteCircular('${circular.id}')" class="flex-1 bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition flex items-center justify-center gap-1">
+                    <span class="material-icons text-sm">delete</span>
+                    <span class="text-sm font-semibold">Delete</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        document.getElementById('circularsList').innerHTML = html;
+      } catch (error) {
+        console.error('Error loading circulars:', error);
+        document.getElementById('circularsList').innerHTML = `
+          <div class="col-span-3 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+            <strong>Error:</strong> ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    async function editCircular(circularId) {
+      try {
+        const { data: circular, error } = await window.supabaseClient
+          .from('circulars')
+          .select('*')
+          .eq('id', circularId)
+          .single();
+
+        if (error) throw error;
+
+        editingCircularId = circularId;
+        document.getElementById('modalTitle').textContent = 'Edit Circular';
+        document.getElementById('circularId').value = circular.id;
+        document.getElementById('circularTitle').value = circular.title;
+        document.getElementById('circularDescription').value = circular.description;
+        document.getElementById('circularCategory').value = circular.category;
+        document.getElementById('circularPriority').value = circular.priority;
+        document.getElementById('isActive').checked = circular.is_active;
+        document.getElementById('validUntil').value = circular.valid_until || '';
+
+        if (circular.target_year) {
+          document.querySelector('input[name="targetAudience"][value="year"]').checked = true;
+          document.getElementById('yearFilter').classList.remove('hidden');
+          document.getElementById('targetYear').value = circular.target_year;
+        } else if (circular.target_dept) {
+          document.querySelector('input[name="targetAudience"][value="dept"]').checked = true;
+          document.getElementById('deptFilter').classList.remove('hidden');
+          document.getElementById('targetDept').value = circular.target_dept;
+        } else {
+          document.querySelector('input[name="targetAudience"][value="all"]').checked = true;
+        }
+
+        if (circular.file_url) {
+          document.getElementById('currentFile').innerHTML = `
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <span class="material-icons text-sm">attach_file</span>
+              <a href="${circular.file_url}" target="_blank" class="text-blue-600 hover:underline">View current file</a>
+            </div>
+          `;
+        }
+
+        document.getElementById('circularModal').classList.remove('hidden');
+      } catch (error) {
+        console.error('Error loading circular:', error);
+        alert('Error loading circular: ' + error.message);
+      }
+    }
+
+    async function deleteCircular(circularId) {
+      if (!confirm('Are you sure you want to delete this circular? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const { error } = await window.supabaseClient
+          .from('circulars')
+          .delete()
+          .eq('id', circularId);
+
+        if (error) throw error;
+
+        alert('Circular deleted successfully!');
+        loadCirculars();
+      } catch (error) {
+        console.error('Error deleting circular:', error);
+        alert('Error deleting circular: ' + error.message);
+      }
+    }
+
+    document.getElementById('circularForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const msgDiv = document.getElementById('formMessage');
+      msgDiv.innerHTML = '<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Saving circular...</div>';
+
+      try {
+        const title = document.getElementById('circularTitle').value;
+        const description = document.getElementById('circularDescription').value;
+        const category = document.getElementById('circularCategory').value;
+        const priority = document.getElementById('circularPriority').value;
+        const isActive = document.getElementById('isActive').checked;
+        const validUntil = document.getElementById('validUntil').value || null;
+        
+        const targetAudience = document.querySelector('input[name="targetAudience"]:checked').value;
+        const targetYear = targetAudience === 'year' ? document.getElementById('targetYear').value : null;
+        const targetDept = targetAudience === 'dept' ? document.getElementById('targetDept').value : null;
+
+        const circularData = {
+          title,
+          description,
+          category,
+          priority,
+          is_active: isActive,
+          valid_until: validUntil,
+          target_year: targetYear,
+          target_dept: targetDept
+        };
+
+        // Handle file upload
+        const fileInput = document.getElementById('circularFile');
+        if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `circular_${Date.now()}.${fileExt}`;
+
+          const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+            .from('Files')
+            .upload(fileName, file);
+
+          if (uploadError) throw new Error('File upload failed: ' + uploadError.message);
+
+          const { data: urlData } = window.supabaseClient.storage
+            .from('Files')
+            .getPublicUrl(fileName);
+
+          circularData.file_url = urlData.publicUrl;
+          circularData.file_type = fileExt;
+        }
+
+        if (editingCircularId) {
+          const { error } = await window.supabaseClient
+            .from('circulars')
+            .update(circularData)
+            .eq('id', editingCircularId);
+
+          if (error) throw error;
+          msgDiv.innerHTML = '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">check_circle</span>Circular updated successfully!</div>';
+        } else {
+          const { error } = await window.supabaseClient
+            .from('circulars')
+            .insert([circularData]);
+
+          if (error) throw error;
+          msgDiv.innerHTML = '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">check_circle</span>Circular created successfully!</div>';
+        }
+
+        setTimeout(() => {
+          closeModal();
+          loadCirculars();
+        }, 1500);
+
+      } catch (error) {
+        console.error('Error saving circular:', error);
+        msgDiv.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl"><strong>Error:</strong> ${error.message}</div>`;
+      }
+    });
+
+    loadCirculars();
+  </script>
+</body>
+</html>

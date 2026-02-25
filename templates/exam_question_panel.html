@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Questions | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <div class="max-w-6xl mx-auto py-8 px-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 fade-in">
+      <div class="flex items-center gap-3 mb-6">
+        <span class="material-icons text-blue-600" style="font-size: 36px;">quiz</span>
+        <h1 class="text-3xl font-bold text-gray-800">Question Panel</h1>
+      </div>
+      <div id="questionPanel" class="space-y-6"></div>
+    </div>
+  </div>
+
+  <script>
+    const { createClient } = window.supabase;
+    // Initialize Supabase client (check if already exists to avoid redeclaration)
+    if (!window.supabaseClient) {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    }
+
+    async function renderQuestionPanel() {
+      try {
+        const examId = localStorage.getItem('exam_id');
+        if (!examId) {
+          document.getElementById('questionPanel').innerHTML = '<div class="text-center text-red-600">No exam selected</div>';
+          return;
+        }
+
+        const { data: questions } = await supabase.from('questions').select('*').eq('exam_id', examId);
+        
+        if (!questions || questions.length === 0) {
+          document.getElementById('questionPanel').innerHTML = '<div class="text-center text-gray-600">No questions available</div>';
+          return;
+        }
+
+        let html = '';
+        questions.forEach((q, i) => {
+          const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+          html += `<div class="border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">${i+1}</span>
+              <span class="text-sm text-gray-500">${q.type}</span>
+            </div>
+            <h3 class="font-bold text-lg text-gray-800 mb-4">${q.question_text}</h3>
+            <div class="space-y-2 ml-10">`;
+          
+          ['A', 'B', 'C', 'D'].forEach(opt => {
+            if (options[opt]) {
+              const isCorrect = q.correct_answer === opt;
+              html += `<div class="flex items-start gap-2 ${isCorrect ? 'text-green-700 font-semibold' : 'text-gray-700'}">
+                <span class="font-bold">${opt}.</span>
+                <span>${options[opt]}</span>
+                ${isCorrect ? '<span class="material-icons text-green-600 text-sm ml-2">check_circle</span>' : ''}
+              </div>`;
+            }
+          });
+          
+          html += `</div></div>`;
+        });
+
+        document.getElementById('questionPanel').innerHTML = html;
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('questionPanel').innerHTML = `<div class="text-center text-red-600">Error loading questions: ${error.message}</div>`;
+      }
+    }
+
+    renderQuestionPanel();
+  </script>
+</body>
+</html>

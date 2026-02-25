@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Exam | Placement Cell</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <nav class="bg-blue-700 text-white px-6 py-4 flex justify-between items-center">
+    <span class="font-bold text-xl">Placement Cell Admin</span>
+    <a href="{{ url_for('admin_dashboard') }}" class="bg-gray-200 text-blue-700 px-4 py-2 rounded hover:bg-gray-300">← Dashboard</a>
+  </nav>
+  
+  <div class="max-w-7xl mx-auto py-8 px-4">
+    <!-- Step 1: Create Exam -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <h2 class="text-2xl font-bold mb-2 text-blue-700">Step 1: Create Exam</h2>
+      <p class="text-gray-600 mb-6">Fill in the basic exam details to get started</p>
+      
+      <form id="createExamForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-semibold mb-2">Exam Title *</label>
+          <input type="text" id="title" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. Aptitude Test 2025" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Exam Date *</label>
+          <input type="date" id="date" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Duration (minutes) *</label>
+          <input type="number" id="duration" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="60" required>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold mb-2">Instructions</label>
+          <textarea id="instructions" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Enter exam instructions here..." rows="3"></textarea>
+        </div>
+        <div class="md:col-span-2">
+          <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold">✓ Create Exam</button>
+        </div>
+      </form>
+      
+      <div id="successMsg" class="text-green-600 mt-4 font-semibold"></div>
+      <div id="errorMsg" class="text-red-500 mt-4 font-semibold"></div>
+    </div>
+
+    <!-- Step 2: Add Questions (Hidden until exam created) -->
+    <div id="questionSection" class="hidden">
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-2 text-blue-700">Step 2: Add Questions</h2>
+        <p class="text-gray-600 mb-6">Choose your preferred method to add questions</p>
+        
+        <!-- Section Configuration -->
+        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+          <h3 class="font-semibold mb-3">Section Configuration (Optional)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" id="sectionTitle" class="px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Section Title (e.g. Aptitude)">
+            <input type="text" id="sectionDesc" class="px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Section Description">
+          </div>
+        </div>
+
+        <!-- Tabs for different input methods -->
+        <div class="mb-6">
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+              <button type="button" onclick="switchTab('single')" id="tabSingle" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 font-semibold">
+                📝 Single Question
+              </button>
+              <button type="button" onclick="switchTab('bulk')" id="tabBulk" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 font-semibold">
+                📁 Bulk Upload CSV
+              </button>
+              <button type="button" onclick="switchTab('multiple')" id="tabMultiple" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 font-semibold">
+                📋 Generate Multiple
+              </button>
+              <button type="button" onclick="switchTab('word')" id="tabWord" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 font-semibold">
+                📄 Upload Word Doc
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Tab Content: Single Question -->
+        <div id="contentSingle" class="tab-content">
+          <form id="addQuestionForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Question Type Selector -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold mb-2">Question Type *</label>
+              <select id="questionType" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" required onchange="switchQuestionType()">
+                <option value="mcq">Multiple Choice (MCQ)</option>
+                <option value="true_false">True/False</option>
+                <option value="short_answer">Short Answer</option>
+                <option value="essay">Essay/Long Answer</option>
+                <option value="fill_blank">Fill in the Blank</option>
+                <option value="matching">Matching</option>
+                <option value="coding">Coding Question (LeetCode Style)</option>
+              </select>
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold mb-2">Question Text *</label>
+              <textarea id="questionText" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Enter your question here..." rows="3" required></textarea>
+            </div>
+            
+            <!-- MCQ Options (default) -->
+            <div id="mcqOptions" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold mb-2">Option 1 *</label>
+                <input type="text" id="option1" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 1">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2">Option 2 *</label>
+                <input type="text" id="option2" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 2">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2">Option 3 *</label>
+                <input type="text" id="option3" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 3">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2">Option 4 *</label>
+                <input type="text" id="option4" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 4">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2">Correct Answer *</label>
+                <select id="correctAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Correct Answer</option>
+                  <option value="option1">Option 1</option>
+                  <option value="option2">Option 2</option>
+                  <option value="option3">Option 3</option>
+                  <option value="option4">Option 4</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- True/False Options (hidden by default) -->
+            <div id="trueFalseOptions" class="md:col-span-2 hidden">
+              <label class="block text-sm font-semibold mb-2">Correct Answer *</label>
+              <select id="trueFalseAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                <option value="">Select Correct Answer</option>
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+            </div>
+            
+            <!-- Short Answer Options (hidden by default) -->
+            <div id="shortAnswerOptions" class="md:col-span-2 hidden">
+              <div class="mb-4">
+                <label class="block text-sm font-semibold mb-2">Expected Answer (for auto-grading)</label>
+                <input type="text" id="expectedAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Leave empty for manual grading">
+              </div>
+              <label class="flex items-center">
+                <input type="checkbox" id="caseSensitive" class="mr-2 w-4 h-4">
+                <span class="text-sm">Case Sensitive</span>
+              </label>
+            </div>
+            
+            <!-- Essay Options (hidden by default) -->
+            <div id="essayOptions" class="md:col-span-2 hidden">
+              <label class="block text-sm font-semibold mb-2">Maximum Word Count</label>
+              <input type="number" id="maxWordCount" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. 500">
+            </div>
+            
+            <!-- Fill Blank Options (hidden by default) -->
+            <div id="fillBlankOptions" class="md:col-span-2 hidden">
+              <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+                <p class="font-semibold mb-1">Format Guide:</p>
+                <p>Use [blank] or _____ to indicate where students should fill in answers.</p>
+                <p class="mt-2"><strong>Example:</strong> The capital of France is [blank].</p>
+              </div>
+              <label class="block text-sm font-semibold mb-2">Correct Answer(s) *</label>
+              <input type="text" id="fillBlankAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="For multiple blanks, separate with commas">
+            </div>
+            
+            <!-- Matching Options (hidden by default) -->
+            <div id="matchingOptions" class="md:col-span-2 hidden">
+              <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+                <p class="font-semibold mb-1">Enter matching pairs below:</p>
+              </div>
+              <div id="matchingPairsList" class="space-y-2 mb-3"></div>
+              <button type="button" onclick="addMatchingPair()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">+ Add Pair</button>
+            </div>
+            
+            <!-- Coding Question Options (hidden by default) -->
+            <div id="codingOptions" class="md:col-span-2 hidden">
+              <div class="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <h4 class="font-semibold mb-2 text-purple-700">💻 Coding Question Setup</h4>
+                <p class="text-sm text-gray-700">Configure language support, time limits, and test cases for this coding problem.</p>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-2">Supported Languages *</label>
+                  <div class="space-y-2">
+                    <label class="flex items-center"><input type="checkbox" class="mr-2 coding-lang" value="python" checked> Python</label>
+                    <label class="flex items-center"><input type="checkbox" class="mr-2 coding-lang" value="java"> Java</label>
+                    <label class="flex items-center"><input type="checkbox" class="mr-2 coding-lang" value="cpp"> C++</label>
+                    <label class="flex items-center"><input type="checkbox" class="mr-2 coding-lang" value="javascript"> JavaScript</label>
+                  </div>
+                </div>
+                
+                <div>
+                  <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">Time Limit (ms)</label>
+                    <input type="number" id="timeLimit" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" value="2000" placeholder="2000">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold mb-2">Memory Limit (MB)</label>
+                    <input type="number" id="memoryLimit" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" value="256" placeholder="256">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4">
+                <label class="block text-sm font-semibold mb-2">Input Format Description</label>
+                <textarea id="inputFormat" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" rows="2" placeholder="e.g. First line: integer n, Second line: n space-separated integers"></textarea>
+              </div>
+              
+              <div class="mt-4">
+                <label class="block text-sm font-semibold mb-2">Output Format Description</label>
+                <textarea id="outputFormat" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" rows="2" placeholder="e.g. Single integer representing the sum"></textarea>
+              </div>
+              
+              <div class="mt-4">
+                <label class="block text-sm font-semibold mb-2">Constraints</label>
+                <textarea id="constraints" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" rows="2" placeholder="e.g. 1 <= n <= 10^5, -10^9 <= arr[i] <= 10^9"></textarea>
+              </div>
+              
+              <div class="mt-4">
+                <label class="block text-sm font-semibold mb-2">Template Code (Python)</label>
+                <textarea id="templateCodePython" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 font-mono text-sm" rows="4" placeholder="def solve():\n    # Write your code here\n    pass"></textarea>
+              </div>
+              
+              <div class="mt-4">
+                <h4 class="font-semibold mb-3">Test Cases</h4>
+                <div id="testCasesList" class="space-y-3 mb-3"></div>
+                <button type="button" onclick="addTestCase()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">+ Add Test Case</button>
+              </div>
+            </div>
+            
+            <!-- Common Fields -->
+            <div>
+              <label class="block text-sm font-semibold mb-2">Points</label>
+              <input type="number" id="points" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" value="10" placeholder="10">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-2">Difficulty</label>
+              <select id="difficulty" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                <option value="">Select Difficulty</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold mb-2">Negative Mark</label>
+              <input type="number" id="negativeMark" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. -0.25" step="0.01">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-2">Tags (comma separated)</label>
+              <input type="text" id="tags" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. math, algebra">
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold mb-2">Question Image (Optional)</label>
+              <input type="file" id="questionImage" accept="image/*" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="md:col-span-2 space-y-2">
+              <label class="flex items-center">
+                <input type="checkbox" id="shuffleOptions" class="mr-2 w-4 h-4">
+                <span class="text-sm">Shuffle Options for Each Student</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" id="randomizeQuestion" class="mr-2 w-4 h-4">
+                <span class="text-sm">Randomize Question Order</span>
+              </label>
+            </div>
+            
+            <div class="md:col-span-2 flex gap-4">
+              <button type="button" id="previewBtn" class="flex-1 bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 font-semibold">👁️ Preview</button>
+              <button type="submit" class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold">✓ Add Question</button>
+            </div>
+          </form>
+          
+          <div id="previewPanel" class="bg-gray-50 p-4 rounded-lg shadow mt-4"></div>
+          <div id="questionMsg" class="text-green-600 mt-4 font-semibold"></div>
+          <div id="questionError" class="text-red-500 mt-4 font-semibold"></div>
+        </div>
+
+        <!-- Tab Content: Bulk Upload -->
+        <div id="contentBulk" class="tab-content hidden">
+          <div class="mb-6">
+            <h3 class="font-semibold mb-4 text-lg">Choose Upload Method:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- CSV Upload -->
+              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-400 transition">
+                <h4 class="font-semibold mb-2 flex items-center">📊 CSV File</h4>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+                  <p class="font-semibold mb-1">Format:</p>
+                  <code class="text-xs">question_text, option1, option2, option3, option4, correct_answer, negative_mark, difficulty, tags</code>
+                </div>
+                <form id="bulkUploadForm" class="space-y-3">
+                  <input type="file" id="bulkCSV" accept=".csv" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                  <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold">📤 Upload CSV</button>
+                </form>
+                <div id="bulkMsg" class="text-green-600 mt-2 text-sm font-semibold"></div>
+                <div id="bulkError" class="text-red-500 mt-2 text-sm font-semibold"></div>
+              </div>
+
+              <!-- Word Document Upload -->
+              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-400 transition">
+                <h4 class="font-semibold mb-2 flex items-center">📄 Word Document</h4>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+                  <p class="font-semibold mb-1">Format Example:</p>
+                  <code class="text-xs block">
+                    1. What is 2+2?<br>
+                    A) 3<br>
+                    B) 4 [CORRECT]<br>
+                    C) 5<br>
+                    D) 6
+                  </code>
+                </div>
+                <form id="wordUploadForm" class="space-y-3">
+                  <input type="file" id="wordDocFile" accept=".docx" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                  <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">📤 Upload Word Doc</button>
+                </form>
+                <div id="wordMsg" class="text-green-600 mt-2 text-sm font-semibold"></div>
+                <div id="wordError" class="text-red-500 mt-2 text-sm font-semibold"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content: Generate Multiple -->
+        <div id="contentMultiple" class="tab-content hidden">
+          <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">Number of Questions</label>
+            <input type="number" id="numQuestions" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" min="1" max="50" value="5" placeholder="How many questions?">
+            <button type="button" id="generateSectionsBtn" class="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold">🔄 Generate Question Forms</button>
+          </div>
+          <form id="multiQuestionForm" class="space-y-4"></form>
+        </div>
+
+        <!-- Tab Content: Word Document Upload -->
+        <div id="contentWord" class="tab-content hidden">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 class="font-semibold mb-2">📝 Word Document Format Guide:</h4>
+            <div class="text-sm space-y-2">
+              <p><strong>Format 1 - Simple:</strong></p>
+              <code class="block bg-white p-2 rounded">
+                Q1. What is 2+2?<br>
+                A) 3<br>
+                B) 4 [CORRECT]<br>
+                C) 5<br>
+                D) 6
+              </code>
+              <p class="mt-3"><strong>Format 2 - Structured:</strong></p>
+              <code class="block bg-white p-2 rounded">
+                Question: What is the capital of France?<br>
+                Option1: London<br>
+                Option2: Paris<br>
+                Option3: Berlin<br>
+                Option4: Madrid<br>
+                Correct: Option2<br>
+                Difficulty: Easy<br>
+                Tags: geography
+              </code>
+            </div>
+          </div>
+          
+          <form id="wordUploadForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold mb-2">Upload Word Document (.docx)</label>
+              <input type="file" id="wordFile" accept=".docx,.doc" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">📤 Parse & Upload Questions</button>
+          </form>
+          
+          <div id="wordMsg" class="text-green-600 mt-4 font-semibold"></div>
+          <div id="wordError" class="text-red-500 mt-4 font-semibold"></div>
+          <div id="wordPreview" class="mt-6"></div>
+        </div>
+      </div>
+
+      <!-- Questions List -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
+        <h2 class="text-2xl font-bold mb-4 text-blue-700">Added Questions</h2>
+        <div id="questionsList" class="space-y-4"></div>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    .tab-btn.active { border-color: #2563eb; color: #2563eb; }
+    .tab-btn { transition: all 0.3s; }
+  </style>
+  
+  <script type="module">
+    import { supabase } from '/static/js/database.js';
+    
+    let currentExamId = null;
+    let currentSection = { title: '', desc: '' };
+    let testCasesData = [];
+    let matchingPairsData = [];
+
+    // Question type switching
+    window.switchQuestionType = function() {
+      const type = document.getElementById('questionType').value;
+      
+      // Hide all type-specific sections
+      document.getElementById('mcqOptions').classList.add('hidden');
+      document.getElementById('trueFalseOptions').classList.add('hidden');
+      document.getElementById('shortAnswerOptions').classList.add('hidden');
+      document.getElementById('essayOptions').classList.add('hidden');
+      document.getElementById('fillBlankOptions').classList.add('hidden');
+      document.getElementById('matchingOptions').classList.add('hidden');
+      document.getElementById('codingOptions').classList.add('hidden');
+      
+      // Show relevant section
+      if (type === 'mcq') {
+        document.getElementById('mcqOptions').classList.remove('hidden');
+      } else if (type === 'true_false') {
+        document.getElementById('trueFalseOptions').classList.remove('hidden');
+      } else if (type === 'short_answer') {
+        document.getElementById('shortAnswerOptions').classList.remove('hidden');
+      } else if (type === 'essay') {
+        document.getElementById('essayOptions').classList.remove('hidden');
+      } else if (type === 'fill_blank') {
+        document.getElementById('fillBlankOptions').classList.remove('hidden');
+      } else if (type === 'matching') {
+        document.getElementById('matchingOptions').classList.remove('hidden');
+        if (matchingPairsData.length === 0) {
+          addMatchingPair();
+          addMatchingPair();
+        }
+      } else if (type === 'coding') {
+        document.getElementById('codingOptions').classList.remove('hidden');
+        if (testCasesData.length === 0) {
+          addTestCase();
+        }
+      }
+    };
+    
+    // Add matching pair
+    window.addMatchingPair = function() {
+      const pairId = matchingPairsData.length;
+      matchingPairsData.push({ left: '', right: '' });
+      
+      const html = `
+        <div class="flex gap-2 items-center" id="pair_${pairId}">
+          <input type="text" placeholder="Left item" class="flex-1 px-4 py-2 border rounded" onchange="updateMatchingPair(${pairId}, 'left', this.value)">
+          <span class="text-gray-500">↔</span>
+          <input type="text" placeholder="Right item" class="flex-1 px-4 py-2 border rounded" onchange="updateMatchingPair(${pairId}, 'right', this.value)">
+          <button type="button" onclick="removeMatchingPair(${pairId})" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600">✕</button>
+        </div>
+      `;
+      document.getElementById('matchingPairsList').insertAdjacentHTML('beforeend', html);
+    };
+    
+    window.updateMatchingPair = function(id, side, value) {
+      matchingPairsData[id][side] = value;
+    };
+    
+    window.removeMatchingPair = function(id) {
+      document.getElementById(`pair_${id}`).remove();
+      matchingPairsData[id] = null;
+    };
+    
+    // Add test case for coding questions
+    window.addTestCase = function() {
+      const testId = testCasesData.length;
+      testCasesData.push({ input: '', output: '', isSample: false, points: 10, explanation: '' });
+      
+      const html = `
+        <div class="border border-gray-300 rounded-lg p-4" id="test_${testId}">
+          <div class="flex justify-between items-center mb-3">
+            <h5 class="font-semibold">Test Case ${testId + 1}</h5>
+            <button type="button" onclick="removeTestCase(${testId})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">Remove</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-semibold mb-1">Input</label>
+              <textarea class="w-full px-3 py-2 border rounded text-sm" rows="2" onchange="updateTestCase(${testId}, 'input', this.value)" placeholder="Test input"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Expected Output</label>
+              <textarea class="w-full px-3 py-2 border rounded text-sm" rows="2" onchange="updateTestCase(${testId}, 'output', this.value)" placeholder="Expected output"></textarea>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-sm font-semibold mb-1">Points</label>
+              <input type="number" value="10" class="w-full px-3 py-2 border rounded text-sm" onchange="updateTestCase(${testId}, 'points', this.value)">
+            </div>
+            <div class="flex items-end">
+              <label class="flex items-center">
+                <input type="checkbox" class="mr-2" onchange="updateTestCase(${testId}, 'isSample', this.checked)">
+                <span class="text-sm">Sample Test (Visible to students)</span>
+              </label>
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="block text-sm font-semibold mb-1">Explanation (for sample tests)</label>
+            <input type="text" class="w-full px-3 py-2 border rounded text-sm" onchange="updateTestCase(${testId}, 'explanation', this.value)" placeholder="Optional explanation">
+          </div>
+        </div>
+      `;
+      document.getElementById('testCasesList').insertAdjacentHTML('beforeend', html);
+    };
+    
+    window.updateTestCase = function(id, field, value) {
+      testCasesData[id][field] = value;
+    };
+    
+    window.removeTestCase = function(id) {
+      document.getElementById(`test_${id}`).remove();
+      testCasesData[id] = null;
+    };
+
+    // Tab switching
+    window.switchTab = function(tab) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('border-blue-500', 'text-blue-600');
+        el.classList.add('border-transparent', 'text-gray-500');
+      });
+      
+      // Show selected tab
+      document.getElementById('content' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+      document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('border-blue-500', 'text-blue-600');
+      document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('border-transparent', 'text-gray-500');
+    };
+
+    // Section title/desc
+    document.getElementById('sectionTitle').addEventListener('input', e => currentSection.title = e.target.value);
+    document.getElementById('sectionDesc').addEventListener('input', e => currentSection.desc = e.target.value);
+
+    // Create Exam Form
+    document.getElementById('createExamForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const date = document.getElementById('date').value;
+      const duration = parseInt(document.getElementById('duration').value);
+      const instructions = document.getElementById('instructions').value;
+      
+      const { data, error } = await supabase.from('exams').insert({ title, date, duration, instructions }).select();
+      
+      if (error) {
+        document.getElementById('errorMsg').textContent = '❌ ' + error.message;
+        document.getElementById('successMsg').textContent = '';
+      } else {
+        document.getElementById('successMsg').textContent = '✓ Exam created successfully! Now add questions below.';
+        document.getElementById('errorMsg').textContent = '';
+        document.getElementById('createExamForm').reset();
+        currentExamId = data[0].id;
+        document.getElementById('questionSection').classList.remove('hidden');
+        loadQuestions();
+      }
+    });
+
+    // Generate multiple question sections
+    document.getElementById('generateSectionsBtn').onclick = function() {
+      const num = parseInt(document.getElementById('numQuestions').value);
+      const multiForm = document.getElementById('multiQuestionForm');
+      multiForm.innerHTML = '';
+      for (let i = 1; i <= num; i++) {
+        multiForm.innerHTML += [
+          `<div class='bg-white p-4 rounded shadow mb-4'>`,
+            `<h4 class='font-bold mb-2'>Question ${i}</h4>`,
+            `<textarea name='questionText${i}' class='w-full px-4 py-2 border rounded mb-2' placeholder='Question Text' required></textarea>`,
+            `<div class='grid grid-cols-1 gap-2 mb-2'>`,
+              `<input type='text' name='option1_${i}' class='px-4 py-2 border rounded' placeholder='Option 1' required>`,
+              `<input type='text' name='option2_${i}' class='px-4 py-2 border rounded' placeholder='Option 2' required>`,
+              `<input type='text' name='option3_${i}' class='px-4 py-2 border rounded' placeholder='Option 3' required>`,
+              `<input type='text' name='option4_${i}' class='px-4 py-2 border rounded' placeholder='Option 4' required>`,
+            `</div>`,
+            `<select name='correctAnswer${i}' class='w-full px-4 py-2 border rounded mb-2' required>`,
+              `<option value=''>Select Correct Answer</option>`,
+              `<option value='option1_${i}'>Option 1</option>`,
+              `<option value='option2_${i}'>Option 2</option>`,
+              `<option value='option3_${i}'>Option 3</option>`,
+              `<option value='option4_${i}'>Option 4</option>`,
+            `</select>`,
+            `<input type='number' name='negativeMark${i}' class='w-full px-4 py-2 border rounded mb-2' placeholder='Negative Mark (e.g. -0.25)'>`,
+            `<select name='difficulty${i}' class='w-full px-4 py-2 border rounded mb-2'>`,
+              `<option value=''>Select Difficulty</option>`,
+              `<option value='Easy'>Easy</option>`,
+              `<option value='Medium'>Medium</option>`,
+              `<option value='Hard'>Hard</option>`,
+            `</select>`,
+            `<input type='text' name='tags${i}' class='w-full px-4 py-2 border rounded mb-2' placeholder='Tags (comma separated)'>`,
+            `<label class='flex items-center mb-2'><input type='checkbox' name='shuffleOptions${i}' class='mr-2'> Shuffle Options</label>`,
+            `<label class='flex items-center mb-2'><input type='checkbox' name='randomizeQuestion${i}' class='mr-2'> Randomize for Students</label>`,
+          `</div>`
+        ].join('');
+      }
+      multiForm.innerHTML += `<button type='submit' class='w-full bg-green-600 text-white py-2 rounded hover:bg-green-700'>Add All Questions</button>`;
+    };
+
+    document.getElementById('multiQuestionForm').onsubmit = async function(e) {
+      e.preventDefault();
+      if (!currentExamId) return;
+      const num = parseInt(document.getElementById('numQuestions').value);
+      let success = 0, fail = 0;
+      for (let i = 1; i <= num; i++) {
+        const questionText = this[`questionText${i}`].value;
+        const options = [this[`option1_${i}`].value, this[`option2_${i}`].value, this[`option3_${i}`].value, this[`option4_${i}`].value];
+        if (new Set(options).size < 4) { fail++; continue; }
+        const correctKey = this[`correctAnswer${i}`].value;
+        if (!correctKey) { fail++; continue; }
+        const correctAnswer = this[`option${correctKey.split('_')[1]}_${i}`].value;
+        // Optional fields
+        const negativeMark = this[`negativeMark${i}`].value;
+        const difficulty = this[`difficulty${i}`].value;
+        const tags = this[`tags${i}`].value;
+        const shuffleOptions = this[`shuffleOptions${i}`].checked;
+        const randomizeQuestion = this[`randomizeQuestion${i}`].checked;
+        const sectionVal = currentSection.title ? currentSection.title : null;
+        // Build insert object, only add optional fields if present
+        let insertObj = {
+          exam_id: currentExamId,
+          question_text: questionText,
+          type: 'mcq',
+          options: JSON.stringify(options),
+          correct_answer: correctAnswer
+        };
+        if (negativeMark) insertObj.negative_mark = negativeMark;
+        if (difficulty) insertObj.difficulty = difficulty;
+        if (tags) insertObj.tags = tags;
+        insertObj.shuffle_options = shuffleOptions;
+        insertObj.randomize = randomizeQuestion;
+        if (sectionVal) insertObj.section = sectionVal;
+        // image is not supported in batch form, so ignore
+        const { error } = await supabase.from('questions').insert(insertObj);
+        if (error) fail++; else success++;
+      }
+      document.getElementById('questionMsg').textContent = `✓ ${success} questions added successfully!`;
+      document.getElementById('questionError').textContent = fail ? `❌ ${fail} failed.` : '';
+      loadQuestions();
+      this.reset();
+    };
+
+    // Word document upload
+    document.getElementById('wordUploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentExamId) {
+        document.getElementById('wordError').textContent = '❌ Create an exam first.';
+        return;
+      }
+      
+      const fileInput = document.getElementById('wordFile');
+      if (!fileInput.files.length) {
+        document.getElementById('wordError').textContent = '❌ Please select a Word document.';
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('exam_id', currentExamId);
+      formData.append('section', currentSection.title || '');
+      
+      document.getElementById('wordMsg').textContent = '⏳ Parsing document...';
+      document.getElementById('wordError').textContent = '';
+      
+      try {
+        const response = await fetch('/api/upload_word_questions', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          document.getElementById('wordError').textContent = '❌ ' + result.error;
+          document.getElementById('wordMsg').textContent = '';
+        } else {
+          document.getElementById('wordMsg').textContent = `✓ ${result.success} questions uploaded successfully!`;
+          if (result.failed > 0) {
+            document.getElementById('wordError').textContent = `⚠️ ${result.failed} questions failed to parse.`;
+          }
+          fileInput.value = '';
+          loadQuestions();
+          
+          // Show preview of parsed questions
+          if (result.preview && result.preview.length > 0) {
+            let previewHtml = '<div class="bg-gray-50 p-4 rounded-lg mt-4"><h4 class="font-semibold mb-3">Preview of Parsed Questions:</h4><div class="space-y-2">';
+            result.preview.forEach((q, i) => {
+              previewHtml += `<div class="bg-white p-3 rounded border"><strong>Q${i+1}:</strong> ${q.question_text}</div>`;
+            });
+            previewHtml += '</div></div>';
+            document.getElementById('wordPreview').innerHTML = previewHtml;
+          }
+        }
+      } catch (error) {
+        document.getElementById('wordError').textContent = '❌ Error uploading file: ' + error.message;
+        document.getElementById('wordMsg').textContent = '';
+      }
+    });
+
+    // Bulk upload
+    document.getElementById('bulkUploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentExamId) {
+        document.getElementById('bulkError').textContent = '❌ Create an exam first.';
+        return;
+      }
+      const fileInput = document.getElementById('bulkCSV');
+      if (!fileInput.files.length) return;
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const text = evt.target.result;
+        const rows = text.split('\n').map(r => r.split(','));
+        let success = 0, fail = 0;
+        for (const row of rows) {
+          if (row.length < 6) { fail++; continue; }
+          // CSV: question_text,option1,option2,option3,option4,correct_answer,negative_mark,difficulty,tags
+          const [question_text, option1, option2, option3, option4, correct_answer, negative_mark, difficulty, tags] = row;
+          const options = [option1, option2, option3, option4];
+          const { error } = await supabase.from('questions').insert({
+            exam_id: currentExamId,
+            question_text,
+            type: 'mcq',
+            options: JSON.stringify(options),
+            correct_answer,
+            negative_mark: negative_mark || null,
+            difficulty: difficulty || null,
+            tags: tags || null,
+            section: currentSection.title || null
+          });
+          if (error) fail++; else success++;
+        }
+        document.getElementById('bulkMsg').textContent = `✓ ${success} questions uploaded successfully!`;
+        document.getElementById('bulkError').textContent = fail ? `❌ ${fail} failed.` : '';
+        fileInput.value = '';
+        loadQuestions();
+      };
+      reader.readAsText(file);
+    });
+
+    // Word Document upload
+    document.getElementById('wordUploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentExamId) {
+        document.getElementById('wordError').textContent = '❌ Create an exam first.';
+        return;
+      }
+      const fileInput = document.getElementById('wordDocFile');
+      if (!fileInput.files.length) {
+        document.getElementById('wordError').textContent = '❌ Please select a Word document.';
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('exam_id', currentExamId);
+      if (currentSection.title) formData.append('section', currentSection.title);
+      
+      try {
+        const response = await fetch('/api/upload_word_questions', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          document.getElementById('wordError').textContent = '❌ ' + result.error;
+          document.getElementById('wordMsg').textContent = '';
+        } else {
+          document.getElementById('wordMsg').textContent = `✓ ${result.success} questions uploaded successfully!`;
+          document.getElementById('wordError').textContent = result.failed ? `⚠️ ${result.failed} questions failed.` : '';
+          fileInput.value = '';
+          loadQuestions();
+        }
+      } catch (error) {
+        document.getElementById('wordError').textContent = '❌ Upload failed: ' + error.message;
+        document.getElementById('wordMsg').textContent = '';
+      }
+    });
+
+    // Preview question
+    document.getElementById('previewBtn').onclick = function() {
+      const questionText = document.getElementById('questionText').value;
+      const options = [
+        document.getElementById('option1').value,
+        document.getElementById('option2').value,
+        document.getElementById('option3').value,
+        document.getElementById('option4').value
+      ];
+      const correctKey = document.getElementById('correctAnswer').value;
+      const correctAnswer = correctKey ? document.getElementById(correctKey).value : '';
+      const negativeMark = document.getElementById('negativeMark').value;
+      const difficulty = document.getElementById('difficulty').value;
+      const tags = document.getElementById('tags').value;
+      let html = "<div class='mb-2 font-bold'>Preview:</div><div class='mb-2'>" + questionText + "</div><ul>";
+      options.forEach(function(opt) {
+        html += "<li>" + opt + (opt === correctAnswer ? " <span class='text-green-600'>(Correct)</span>" : "") + "</li>";
+      });
+      html += "</ul><div class='mt-2'>Negative Mark: " + (negativeMark || 'None') + ", Difficulty: " + (difficulty || 'None') + ", Tags: " + (tags || 'None') + "</div>";
+      document.getElementById('previewPanel').innerHTML = html;
+    };
+
+    // Add question (all types)
+    document.getElementById('addQuestionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentExamId) {
+        document.getElementById('questionError').textContent = 'Create an exam first.';
+        return;
+      }
+      
+      const questionType = document.getElementById('questionType').value;
+      const questionText = document.getElementById('questionText').value;
+      const difficulty = document.getElementById('difficulty').value;
+      const tags = document.getElementById('tags').value;
+      const points = document.getElementById('points').value || 10;
+      const sectionVal = currentSection.title ? currentSection.title : null;
+      
+      let insertObj = {
+        exam_id: currentExamId,
+        question_text: questionText,
+        type: questionType,
+        points: parseInt(points)
+      };
+      
+      if (difficulty) insertObj.difficulty = difficulty;
+      if (tags) insertObj.tags = tags;
+      if (sectionVal) insertObj.section = sectionVal;
+      
+      // Type-specific handling
+      if (questionType === 'mcq') {
+        const options = [
+          document.getElementById('option1').value,
+          document.getElementById('option2').value,
+          document.getElementById('option3').value,
+          document.getElementById('option4').value
+        ];
+        if (new Set(options).size < 4) {
+          document.getElementById('questionError').textContent = 'Options must be unique.';
+          return;
+        }
+        const correctKey = document.getElementById('correctAnswer').value;
+        if (!correctKey) {
+          document.getElementById('questionError').textContent = 'Select the correct answer.';
+          return;
+        }
+        insertObj.options = JSON.stringify(options);
+        insertObj.correct_answer = document.getElementById(correctKey).value;
+        const shuffleOptions = document.getElementById('shuffleOptions')?.checked;
+        const randomizeQuestion = document.getElementById('randomizeQuestion')?.checked;
+        if (shuffleOptions) insertObj.shuffle_options = shuffleOptions;
+        if (randomizeQuestion) insertObj.randomize = randomizeQuestion;
+      } 
+      else if (questionType === 'true_false') {
+        const answer = document.getElementById('trueFalseAnswer').value;
+        if (!answer) {
+          document.getElementById('questionError').textContent = 'Select True or False.';
+          return;
+        }
+        insertObj.expected_answer = answer;
+      }
+      else if (questionType === 'short_answer') {
+        const expectedAnswer = document.getElementById('expectedAnswer').value;
+        const caseSensitive = document.getElementById('caseSensitive').checked;
+        if (expectedAnswer) insertObj.expected_answer = expectedAnswer;
+        insertObj.case_sensitive = caseSensitive;
+      }
+      else if (questionType === 'essay') {
+        const maxWords = document.getElementById('maxWordCount').value;
+        if (maxWords) insertObj.max_word_count = parseInt(maxWords);
+      }
+      else if (questionType === 'fill_blank') {
+        const answer = document.getElementById('fillBlankAnswer').value;
+        if (!answer) {
+          document.getElementById('questionError').textContent = 'Enter the correct answer(s).';
+          return;
+        }
+        insertObj.expected_answer = answer;
+      }
+      else if (questionType === 'matching') {
+        const validPairs = matchingPairsData.filter(p => p && p.left && p.right);
+        if (validPairs.length < 2) {
+          document.getElementById('questionError').textContent = 'Add at least 2 matching pairs.';
+          return;
+        }
+        insertObj.matching_pairs = JSON.stringify(validPairs);
+      }
+      else if (questionType === 'coding') {
+        // Get selected languages
+        const languages = Array.from(document.querySelectorAll('.coding-lang:checked')).map(cb => cb.value);
+        if (languages.length === 0) {
+          document.getElementById('questionError').textContent = 'Select at least one programming language.';
+          return;
+        }
+        
+        const validTests = testCasesData.filter(t => t && t.input && t.output);
+        if (validTests.length === 0) {
+          document.getElementById('questionError').textContent = 'Add at least one test case.';
+          return;
+        }
+        
+        insertObj.language_support = languages;
+        insertObj.time_limit = parseInt(document.getElementById('timeLimit').value) || 2000;
+        insertObj.memory_limit = parseInt(document.getElementById('memoryLimit').value) || 256;
+        insertObj.input_format = document.getElementById('inputFormat').value;
+        insertObj.output_format = document.getElementById('outputFormat').value;
+        insertObj.constraints = document.getElementById('constraints').value;
+        
+        const templatePython = document.getElementById('templateCodePython').value;
+        if (templatePython) {
+          insertObj.template_code = JSON.stringify({ python: templatePython });
+        }
+      }
+      
+      // Upload question image if present
+      let imageUrl = null;
+      const imageInput = document.getElementById('questionImage');
+      if (imageInput && imageInput.files.length) {
+        const file = imageInput.files[0];
+        const { data, error } = await supabase.storage.from('question-images').upload(`/${Date.now()}_${file.name}`, file);
+        if (!error) insertObj.image = data.path;
+      }
+      
+      // Insert question
+      const { data: questionData, error } = await supabase.from('questions').insert(insertObj).select();
+      
+      if (error) {
+        document.getElementById('questionError').textContent = '❌ ' + error.message;
+        document.getElementById('questionMsg').textContent = '';
+        return;
+      }
+      
+      // If coding question, insert test cases
+      if (questionType === 'coding' && questionData && questionData[0]) {
+        const questionId = questionData[0].id;
+        const validTests = testCasesData.filter(t => t && t.input && t.output);
+        
+        for (let i = 0; i < validTests.length; i++) {
+          const test = validTests[i];
+          await supabase.from('coding_test_cases').insert({
+            question_id: questionId,
+            input: test.input,
+            expected_output: test.output,
+            is_sample: test.isSample || false,
+            points: parseInt(test.points) || 10,
+            explanation: test.explanation || '',
+            test_order: i
+          });
+        }
+      }
+      
+      document.getElementById('questionMsg').textContent = '✓ Question added successfully!';
+      document.getElementById('questionError').textContent = '';
+      document.getElementById('addQuestionForm').reset();
+      document.getElementById('previewPanel').innerHTML = '';
+      
+      // Reset dynamic arrays
+      testCasesData = [];
+      matchingPairsData = [];
+      document.getElementById('testCasesList').innerHTML = '';
+      document.getElementById('matchingPairsList').innerHTML = '';
+      
+      // Reset to MCQ type
+      document.getElementById('questionType').value = 'mcq';
+      switchQuestionType();
+      
+      loadQuestions();
+    });
+
+    // Edit/Delete
+    window.editQuestion = async function(id) {
+      // Fetch and populate form for editing (not implemented for brevity)
+      alert('Edit feature coming soon!');
+    };
+    window.deleteQuestion = async function(id) {
+      if (confirm('Delete this question?')) {
+        await supabase.from('questions').delete().eq('id', id);
+        loadQuestions();
+      }
+    };
+
+    async function loadQuestions() {
+      if (!currentExamId) return;
+      const { data, error } = await supabase.from('questions').select('*').eq('exam_id', currentExamId);
+      if (error) {
+        document.getElementById('questionsList').innerHTML = '<div class="text-red-500">Error loading questions: ' + error.message + '</div>';
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        document.getElementById('questionsList').innerHTML = '<div class="text-gray-500 text-center py-8">No questions added yet. Use the tabs above to add questions.</div>';
+        return;
+      }
+      
+      let html = '<div class="space-y-4">';
+      data.forEach((q, index) => {
+        // Question type badge colors
+        const typeBadges = {
+          'mcq': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'MCQ' },
+          'true_false': { bg: 'bg-green-100', text: 'text-green-800', label: 'True/False' },
+          'short_answer': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Short Answer' },
+          'essay': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Essay' },
+          'fill_blank': { bg: 'bg-pink-100', text: 'text-pink-800', label: 'Fill Blank' },
+          'matching': { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Matching' },
+          'coding': { bg: 'bg-red-100', text: 'text-red-800', label: 'Coding' }
+        };
+        
+        const badge = typeBadges[q.type] || typeBadges['mcq'];
+        
+        html += `<div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex gap-2">
+              <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">Q${index + 1}</span>
+              <span class="${badge.bg} ${badge.text} px-3 py-1 rounded-full text-sm font-semibold">${badge.label}</span>
+            </div>
+            <div class="space-x-2">
+              <button class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm" onclick="editQuestion('${q.id}')">✏️ Edit</button>
+              <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm" onclick="deleteQuestion('${q.id}')">🗑️ Delete</button>
+            </div>
+          </div>
+          <div class="font-semibold text-lg mb-3">${q.question_text}</div>`;
+        
+        // Type-specific content
+        if (q.type === 'mcq') {
+          try {
+            const opts = JSON.parse(q.options);
+            html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">';
+            opts.forEach((opt, i) => {
+              const isCorrect = opt === q.correct_answer;
+              html += `<div class="p-2 rounded ${isCorrect ? 'bg-green-50 border border-green-300' : 'bg-gray-50 border border-gray-200'}">
+                <span class="font-semibold">${String.fromCharCode(65 + i)}.</span> ${opt}
+                ${isCorrect ? '<span class="text-green-600 ml-2">✓ Correct</span>' : ''}
+              </div>`;
+            });
+            html += '</div>';
+          } catch {}
+        } else if (q.type === 'true_false' && q.expected_answer) {
+          html += `<div class="bg-green-50 border border-green-300 p-2 rounded inline-block">
+            <span class="font-semibold">Correct Answer:</span> ${q.expected_answer.toUpperCase()}
+          </div>`;
+        } else if (q.type === 'short_answer' && q.expected_answer) {
+          html += `<div class="bg-yellow-50 border border-yellow-300 p-2 rounded">
+            <span class="font-semibold">Expected Answer:</span> ${q.expected_answer}
+            ${q.case_sensitive ? ' <span class="text-xs text-gray-600">(Case Sensitive)</span>' : ''}
+          </div>`;
+        } else if (q.type === 'essay') {
+          html += `<div class="bg-purple-50 border border-purple-300 p-2 rounded">
+            <span class="font-semibold">Essay Question</span> - Manual grading required
+            ${q.max_word_count ? `<br><span class="text-sm">Max words: ${q.max_word_count}</span>` : ''}
+          </div>`;
+        } else if (q.type === 'fill_blank' && q.expected_answer) {
+          html += `<div class="bg-pink-50 border border-pink-300 p-2 rounded">
+            <span class="font-semibold">Correct Answer(s):</span> ${q.expected_answer}
+          </div>`;
+        } else if (q.type === 'matching' && q.matching_pairs) {
+          try {
+            const pairs = JSON.parse(q.matching_pairs);
+            html += '<div class="bg-indigo-50 border border-indigo-300 p-2 rounded"><span class="font-semibold">Matching Pairs:</span><ul class="mt-2 space-y-1">';
+            pairs.forEach(p => {
+              html += `<li class="text-sm">• ${p.left} ↔ ${p.right}</li>`;
+            });
+            html += '</ul></div>';
+          } catch {}
+        } else if (q.type === 'coding') {
+          html += `<div class="bg-red-50 border border-red-300 p-3 rounded">
+            <div class="flex flex-wrap gap-2 mb-2">`;
+          if (q.language_support) {
+            q.language_support.forEach(lang => {
+              html += `<span class="bg-gray-700 text-white px-2 py-1 rounded text-xs">${lang}</span>`;
+            });
+          }
+          html += `</div>
+            <div class="text-sm space-y-1">
+              ${q.time_limit ? `<div>⏱️ Time: ${q.time_limit}ms</div>` : ''}
+              ${q.memory_limit ? `<div>💾 Memory: ${q.memory_limit}MB</div>` : ''}
+            </div>
+          </div>`;
+        }
+        
+        html += '<div class="flex flex-wrap gap-2 text-xs text-gray-600 mt-3">';
+        if (q.points) html += `<span class="bg-green-100 px-2 py-1 rounded">💯 ${q.points} points</span>`;
+        if (q.section) html += `<span class="bg-purple-100 px-2 py-1 rounded">📂 ${q.section}</span>`;
+        if (q.difficulty) html += `<span class="bg-orange-100 px-2 py-1 rounded">📊 ${q.difficulty}</span>`;
+        if (q.tags) html += `<span class="bg-blue-100 px-2 py-1 rounded">🏷️ ${q.tags}</span>`;
+        html += '</div>';
+        
+        if (q.image) {
+          html += `<img src="https://kflhmnyikwaznzkgeini.supabase.co/storage/v1/object/public/question-images/${q.image}" class="mt-3 max-h-48 rounded border">`;
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+      html = `<div class="mb-4 flex justify-between items-center">
+        <span class="text-lg font-semibold">Total Questions: ${data.length}</span>
+        <a href="{{ url_for('admin_dashboard') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ Done</a>
+      </div>` + html;
+      
+      document.getElementById('questionsList').innerHTML = html;
+    }
+  </script>
+</body>
+</html>

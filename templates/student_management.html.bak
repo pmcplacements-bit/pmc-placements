@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Management | Placement Cell</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .hover-lift { transition: all 0.3s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); }
+    .modal-scroll::-webkit-scrollbar { width: 8px; }
+    .modal-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .modal-scroll::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+    .modal-scroll::-webkit-scrollbar-thumb:hover { background: #4338ca; }
+    .table-row:hover { background: linear-gradient(to right, #eff6ff, #f0f9ff); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 min-h-screen">
+  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-6 py-4 shadow-xl">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-white bg-opacity-20 rounded-lg p-2">
+          <span class="material-icons text-3xl">school</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-xl">Placement Cell Admin</h1>
+          <p class="text-xs text-blue-100">Student Management System</p>
+        </div>
+      </div>
+      <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-700 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 font-semibold shadow-lg">
+        <span class="material-icons">dashboard</span>
+        <span>Dashboard</span>
+      </a>
+    </div>
+  </nav>
+  <div class="max-w-7xl mx-auto py-8 px-4">
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h2 class="text-4xl font-bold text-gray-800 flex items-center gap-3">
+          <span class="material-icons text-5xl text-blue-700">people</span>
+          Student Management
+        </h2>
+        <p class="text-gray-600 mt-2">Manage student profiles and placement readiness</p>
+      </div>
+      <div id="studentCount" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl shadow-lg">
+        <p class="text-sm opacity-90">Total Students</p>
+        <p class="text-4xl font-bold">0</p>
+      </div>
+    </div>
+    
+    <!-- Filter & Search Section -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 hover-lift">
+      <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800">
+        <span class="material-icons text-3xl mr-2 text-blue-600">filter_list</span> 
+        Filter Students
+      </h3>
+      <form id="filterForm" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-2 text-gray-700">Department</label>
+          <select id="filterDept" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Departments</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2 text-gray-700">Year</label>
+          <select id="filterYear" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Years</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2 text-gray-700">Section</label>
+          <select id="filterSection" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Sections</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2 text-gray-700">Arrears</label>
+          <select id="filterArrears" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Students</option>
+            <option value="0">No Arrears</option>
+            <option value="1">Has Arrears</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2 text-gray-700">Passport</label>
+          <select id="filterPassport" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Students</option>
+            <option value="true">Has Passport</option>
+            <option value="false">No Passport</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 font-semibold flex items-center justify-center gap-2 shadow-lg">
+            <span class="material-icons">search</span>
+            Apply Filter
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Actions & Student List -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold flex items-center text-gray-800">
+          <span class="material-icons text-3xl mr-2 text-purple-600">group</span> 
+          Student List
+        </h3>
+        <button id="addStudentBtn" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 font-semibold flex items-center gap-2 shadow-lg hover-lift">
+          <span class="material-icons">person_add</span> 
+          Add Student
+        </button>
+      </div>
+      <div id="studentList" class="overflow-x-auto"></div>
+    </div>70 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
+        <h3 class="text-3xl font-bold mb-6 text-blue-700 flex items-center">
+          <span class="material-icons text-4xl mr-2">person_add</span> 
+         xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-2xl font-bold mb-6 text-blue-700 flex items-center">
+          <span class="text-3xl mr-2">➕</span> Add New Student
+        </h3>
+        <form id="addStudentForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Full Name *</label>
+            <input name="name" type="text" placeholder="Enter student name" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Email *</label>
+            <input name="email" type="email" placeholder="student@example.com" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Password *</label>
+            <input name="password" type="password" placeholder="Enter password" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Register Number *</label>
+            <input name="reg_no" type="text" placeholder="e.g. 2021CS001" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Department *</label>
+            <input name="dept" type="text" placeholder="e.g. CSE, ECE, ME" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Year *</label>
+            <select name="year" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+              <option value="">Select Year</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+              <option value="5">5th Year</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Section *</label>
+            <input name="section" type="text" placeholder="e.g. A, B, C" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Mobile Number *</label>
+            <input name="mobile_number" type="tel" placeholder="10-digit mobile" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">CGPA *</label>
+            <input name="cgpa" type="number" step="0.01" min="0" max="10" placeholder="e.g. 8.5" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Current Arrears *</label>
+            <input name="no_of_arrears" type="number" min="0" placeholder="0" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold mb-2">History of Arrears *</label>
+            <select name="history_of_arrears" class="w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+              <option value="false">No History of Arrears</option>
+              <option value="true">Has History of 6">
+            <button type="submit" class="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 font-semibold flex items-center justify-center gap-2">
+              <span class="material-icons">check_circle</span>
+              Add Student
+            </button>
+            <button type="button" id="closeAddStudent" class="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 font-semibold flex items-center justify-center gap-2">
+              <span class="material-icons">close</span>
+              Cancel
+            </button>
+          </div>
+        </form>
+        <div id="addStudentMsg" c2xl shadow-xl p-6 mb-6">
+      <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800">
+        <span class="material-icons text-3xl mr-2 text-green-600">assignment_turned_in</span> 
+        Assign Exam to Students
+      </h3>
+      <div id="bulkAssignPanel"></div>
+    </div>
+    <div id="assignMsg" class="mt-2"></div>
+    <div id="errorMsg" class="ow-2xl w-full max-w-5xl my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
+        <div class="sticky top-0 bg-gradient-to-r from-blue-900 to-purple-700 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+          <div class="flex items-center gap-4">
+            <div id="viewProfileIcon" class="bg-white text-blue-800 rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold"></div>
+            <div>
+              <h3 class="text-2xl font-bold" id="viewStudentName"></h3>
+              <p class="text-blue-100" id="viewStudentEmail"></p>
+            </div>
+          </div>
+          <button onclick="closeViewModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
+       Store current student for modal
+    let currentViewStudent = null;
+
+    // View student details
+    window.viewStudent = function(studentId) {
+      const student = window.allStudents.find(s => s.id === studentId);
+      if (!student) return;
+      
+      currentViewStudent = student;
+      const initials = student.name.split(' ').map(w => w[0]).join('').toUpperCase();
+      
+      document.getElementById('viewProfileIcon').textContent = initials;
+      document.getElementById('viewStudentName').textContent = student.name;
+      document.getElementById('viewStudentEmail').textContent = student.email;
+      document.getElementById('viewRegNo').textContent = student.reg_no;
+      document.getElementById('viewDept').textContent = student.dept;
+      document.getElementById('viewYearSection').textContent = `Year ${student.year} - Section ${student.section}`;
+      document.getElementById('viewCGPA').textContent = student.cgpa;
+      document.getElementById('viewArrears').textContent = student.no_of_arrears;
+      document.getElementById('viewHistory').textContent = student.history_of_arrears ? 'Yes' : 'No';
+      document.getElementById('viewMobile').textContent = student.mobile_number;
+      document.getElementById('viewEmailFull').textContent = student.email;
+      
+      // Placement profile
+      document.getElementById('viewPassport').innerHTML = student.passport_available ? 
+        '<span class="text-green-600 flex items-center gap-1"><span class="material-icons text-sm">check_circle</span>Yes</span>' : 
+        '<span class="text-red-600 flex items-center gap-1"><span class="material-icons text-sm">cancel</span>No</span>';
+      document.getElementById('viewAadhar').textContent = student.aadhar_number || '-';
+      document.getElementById('viewStrength').textContent = student.my_strength || '-';
+      document.getElementById('viewWeakness').textContent = student.my_weakness || '-';
+      document.getElementById('viewAmbition').textContent = student.my_ambition || '-';
+      document.getElementById('viewHobbies').textContent = student.hobbies || '-';
+      
+      // Resume
+      if (student.resume_url) {
+        document.getElementById('viewResume').innerHTML = `<a href="${student.resume_url}" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-semibold"><span class="material-icons text-sm">description</span>View Resume</a>`;
+      } else {
+        document.getElementById('viewResume').innerHTML = '<p class="text-sm text-gray-500">No resume uploaded</p>';
+      }
+      
+      // Certificates
+      if (student.certificates && student.certificates.length > 0) {
+        let certHtml = '<div class="flex flex-wrap gap-2">';
+        student.certificates.forEach(cert => {
+          certHtml += `<a href="${cert.url}" target="_blank" class="bg-white border border-purple-300 px-3 py-2 rounded-lg text-sm hover:bg-purple-100 flex items-center gap-1"><span class="material-icons text-sm">verified</span>${cert.name}</a>`;
+        });
+        certHtml += '</div>';
+        document.getElementById('viewCertificates').innerHTML = certHtml;
+      } else {
+        document.getElementById('viewCertificates').innerHTML = '<p class="text-sm text-gray-500">No certificates uploaded</p>';
+      }
+      
+      // LeetCode & GitHub
+      if (student.leetcode_link) {
+        document.getElementById('viewLeetcode').innerHTML = `<a href="${student.leetcode_link}" target="_blank" class="text-orange-600 hover:text-orange-800 flex items-center gap-1"><span class="material-icons text-sm">link</span>View Profile</a>`;
+      } else {
+        document.getElementById('viewLeetcode').textContent = '-';
+      }
+      
+      if (student.github_link) {
+        document.getElementById('viewGithub').innerHTML = `<a href="${student.github_link}" target="_blank" class="text-gray-800 hover:text-gray-600 flex items-center gap-1"><span class="material-icons text-sm">link</span>View Profile</a>`;
+      } else {
+        document.getElementById('viewGithub').textContent = '-';
+      }
+      
+      document.getElementById('viewStudentModal').classList.remove('hidden');
+    };
+,
+        passport: document.getElementById('filterPassport').value
+    window.closeViewModal = function() {
+      document.getElementById('viewStudentModal').classList.add('hidden');
+      currentViewStudent = null;
+    };
+
+    window.deleteStudent = async function() {
+      if (!currentViewStudent) return;
+      if (!confirm(`Are you sure you want to delete ${currentViewStudent.name}? This action cannot be undone.`)) return;
+      
+      const { error } = await supabase.from('students').delete().eq('id', currentViewStudent.id);
+      if (error) {
+        alert('Error deleting student: ' + error.message);
+      } else {
+        alert('Student deleted successfully');
+        closeViewModal();
+        loadStudents();
+      }
+    };
+
+    // Load and render students with filters
+    async function loadStudents(filters = {}) {
+      let query = supabase.from('students').select('*');
+      if (filters.dept) query = query.eq('dept', filters.dept);
+      if (filters.year) query = query.eq('year', filters.year);
+      if (filters.section) query = query.eq('section', filters.section);
+      if (filters.arrears !== undefined && filters.arrears !== '') {
+        if (filters.arrears === '0') query = query.eq('no_of_arrears', 0);
+        if (filters.arrears === '1') query = query.gt('no_of_arrears', 0);
+      }
+      if (filters.passport !== undefined && filters.passport !== '') {
+        query = query.eq('passport_available', filters.passport === 'true');
+      }
+      const { data: students, error } = await queryinnerHTML = '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">error</span>' + error.message + '</div>';
+        document.getElementById('addStudentMsg').textContent = '';
+      } else {
+        document.getElementById('addStudentMsg').innerHTML = '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">check_circle</span>Student added successfully!</div>';
+        document.getElementById('addStudentError').textContent = '';
+        form.reset();
+        setTimeout(() => {
+          document.getElementById('addStudentModal').classList.add('hidden');
+          document.getElementById('addStudentMsg').textContent = '';
+          loadStudents();
+        }, 15te count
+      document.getElementById('studentCount').innerHTML = `<p class="text-sm opacity-90">Total Students</p><p class="text-4xl font-bold">${students ? students.length : 0}</p>`;
+      
+      // Render student list
+      if (!students || students.length === 0) {
+        document.getElementById('studentList').innerHTML = '<div class="text-center py-12"><span class="material-icons text-6xl text-gray-300 mb-4">people_outline</span><p class="text-gray-500 text-lg">No students found. Add students to get started.</p></div>';
+        return [];
+      }
+      
+      let html = '<div class="mb-4 flex items-center justify-between">';
+      html += '<div class="text-sm text-gray-600">Showing <span class="font-bold text-blue-700 text-lg">' + students.length + '</span> student(s)</div>';
+      html += '<div class="flex gap-2">';
+      html += '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-icons text-sm">verified</span>' + students.filter(s => s.passport_available).length + ' with Passport</span>';
+      html += '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-icons text-sm">description</span>' + students.filter(s => s.resume_url).length + ' with Resume</span>';
+      html += '</div></div>';
+      html += '<div class="overflow-x-auto rounded-xl border-2 border-gray-200">';
+      html += '<table class="w-full text-sm">';
+      html += '<thead><tr class="bg-gradient-to-r from-blue-700 to-purple-700 text-white">' +
+        '<th class="p-4 text-left font-bold">Name</th>' +
+        '<th class="p-4 text-left font-bold">Reg No</th>' +
+        '<th class="p-4 text-left font-bold">Dept</th>' +
+        '<th class="p-4 text-center font-bold">Year</th>' +
+        '<th class="p-4 text-center font-bold">Section</th>' +
+        '<th class="p-4 text-center font-bold">CGPA</th>' +
+        '<th class="p-4 text-center font-bold">Arrears</th>' +
+        '<th class="p-4 text-center font-bold">Passport</th>' +
+        '<th class="p-4 text-center font-bold">Resume</th>' +
+        '<th class="p-4 text-center font-bold">Actions</th>' +
+        '</tr></thead><tbody>';
+      for (const s of students) {
+        const cgpaColor = s.cgpa >= 9 ? 'text-green-700 font-bold' : s.cgpa >= 7 ? 'text-blue-700 font-bold' : 'text-orange-600';
+        const arrearsColor = s.no_of_arrears === 0 ? 'text-green-700' : 'text-red-700 font-bold';
+        html += `<tr class="border-b table-row cursor-pointer transition">
+          <td class="p-4 font-bold text-gray-800">${s.name}</td>
+          <td class="p-4 text-gray-600">${s.reg_no}</td>
+          <td class="p-4"><span class="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-xs font-bold">${s.dept}</span></td>
+          <td class="p-4 text-center font-semibold">${s.year}</td>
+          <td class="p-4 text-center font-semibold">${s.section}</td>
+          <td class="p-4 text-center ${cgpaColor} text-lg font-bold">${s.cgpa}</td>
+          <td class="p-4 text-center ${arrearsColor} text-lg font-bold">${s.no_of_arrears}</td>
+          <td class="p-4 text-center">${s.passport_available ? '<span class="material-icons text-green-600">check_circle</span>' : '<span class="material-icons text-gray-300">cancel</span>'}</td>
+          <td class="p-4 text-center">${s.resume_url ? '<span class="material-icons text-blue-600">description</span>' : '<span class="material-icons text-gray-300">description</span>'}</td>
+          <td class="p-4 text-center">
+            <button onclick="viewStudent('${s.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold inline-flex items-center gap-1 shadow-md hover-lift">
+              <span class="material-icons text-sm">visibility</span>
+              View
+            </button>
+          </td>
+        </tr>`;
+      }
+      html += '</tbody></table></div
+          <!-- Contact Information -->
+          <div class="mb-6">
+            <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span class="material-icons text-purple-600">contact_phone</span>
+              Contact Information
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-purple-50 rounded-xl p-4 flex items-center gap-3">
+                <span class="material-icons text-purple-600 text-3xl">phone</span>
+                <div>
+                  <p class="text-sm text-gray-600">Mobile Number</p>
+                  <p class="text-lg font-bold text-gray-800" id="viewMobile"></p>
+                </div>
+              </div>
+              <div class="bg-blue-50 rounded-xl p-4 flex items-center gap-3">
+                <span class="material-icons text-blue-600 text-3xl">email</span>
+                <div>
+                  <p class="text-sm text-gray-600">Email Address</p>
+                  <p class="text-lg font-bold text-gray-800" id="viewEmailFull"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Placement Profile -->
+          <div class="mb-6">
+            <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span class="material-icons text-indigo-600">work</span>
+              Placement Profile
+            </h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="bg-indigo-50 rounded-xl p-4">
+                <p class="text-sm text-gray-600 mb-1">Passport Available</p>
+                <p class="text-lg font-bold" id="viewPassport">-</p>
+              </div>
+              <div class="bg-pink-50 rounded-xl p-4">
+                <p class="text-sm text-gray-600 mb-1">Aadhar Number</p>
+                <p class="text-lg font-bold text-gray-800" id="viewAadhar">-</p>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <div class="bg-cyan-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Resume</p>
+                <div id="viewResume">
+                  <p class="text-sm text-gray-500">No resume uploaded</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-4 mb-4">
+              <div class="bg-green-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-1">Strengths</p>
+                <p class="text-gray-800" id="viewStrength">-</p>
+              </div>
+              <div class="bg-red-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-1">Weaknesses</p>
+                <p class="text-gray-800" id="viewWeakness">-</p>
+              </div>
+              <div class="bg-blue-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-1">Ambition</p>
+                <p class="text-gray-800" id="viewAmbition">-</p>
+              </div>
+              <div class="bg-yellow-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-1">Hobbies</p>
+                <p class="text-gray-800" id="viewHobbies">-</p>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <div class="bg-purple-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Certificates</p>
+                <div id="viewCertificates">
+                  <p class="text-sm text-gray-500">No certificates uploaded</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-orange-50 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-1">LeetCode Profile</p>
+                <div id="viewLeetcode">-</div>
+              </div>
+              <div class="bg-gray-100 rounded-xl p-4">
+                <p class="text-sm font-semibold text-gray-700 mb-1">GitHub Profile</p>
+                <div id="viewGithub">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-6">
+            <button onclick="deleteStudent()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-semibold flex items-center justify-center gap-2">
+              <span class="material-icons">delete</span>
+              Delete Student
+            </button>
+            <button onclick="closeViewModal()innerHTML = `<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">check_circle</span>${success} student(s) assigned successfully!${alreadyAssigned ? ` (${alreadyAssigned} already assigned)` : ''}</div>`;
+        document.getElementById('errorMsg').innerHTML = fail ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">error</span>${fail} failed to assign.</div>` : '';
+        this.reset();
+        filterBulkStudents();
+        setTimeout(() => {
+          document.getElementById('assignMsg').innerHTML = '';
+          document.getElementById('errorMsg').innerHTML = '';
+        }, 5000
+        <div id="addStudentMsg" class="mt-4 text-green-600 font-semibold"></div>
+        <div id="addStudentError" class="mt-4 text-red-500 font-semibold"></div>
+      </div>
+    </div>
+
+    <!-- Bulk Exam Assignment -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <h3 class="text-xl font-semibold mb-4 flex items-center">
+        <span class="text-2xl mr-2">📋</span> Assign Exam to Students
+      </h3>
+      <div id="bulkAssignPanel"></div>
+    </div>
+    <div id="assignMsg" class="text-green-600 mt-2"></div>
+    <div id="errorMsg" class="text-red-500 mt-2"></div>
+  </div>
+  <script type="module">
+    import { supabase } from '/static/js/database.js';
+    // Utility: get unique values for filter dropdowns
+    function getUnique(arr, key) {
+      return [...new Set(arr.map(x => x[key]).filter(Boolean))];
+    }
+
+    // Load and render students with filters
+    async function loadStudents(filters = {}) {
+      let query = supabase.from('students').select('*');
+      if (filters.dept) query = query.eq('dept', filters.dept);
+      if (filters.year) query = query.eq('year', filters.year);
+      if (filters.section) query = query.eq('section', filters.section);
+      if (filters.arrears !== undefined && filters.arrears !== '') {
+        if (filters.arrears === '0') query = query.eq('no_of_arrears', 0);
+        if (filters.arrears === '1') query = query.gt('no_of_arrears', 0);
+      }
+      const { data: students, error } = await query;
+      if (error) {
+        document.getElementById('studentList').innerHTML = `<div class='text-red-500'>${error.message}</div>`;
+        return [];
+      }
+      // Render student list
+      if (!students || students.length === 0) {
+        document.getElementById('studentList').innerHTML = '<div class="text-center py-8 text-gray-500">No students found. Add students to get started.</div>';
+        return [];
+      }
+      
+      let html = '<div class="mb-4 text-sm text-gray-600">Showing <span class="font-semibold text-blue-700">' + students.length + '</span> student(s)</div>';
+      html += '<table class="w-full text-sm border-collapse">';
+      html += '<thead><tr class="bg-blue-700 text-white">' +
+        '<th class="p-3 text-left font-semibold">Name</th>' +
+        '<th class="p-3 text-left font-semibold">Reg No</th>' +
+        '<th class="p-3 text-left font-semibold">Dept</th>' +
+        '<th class="p-3 text-center font-semibold">Year</th>' +
+        '<th class="p-3 text-center font-semibold">Sec</th>' +
+        '<th class="p-3 text-left font-semibold">Email</th>' +
+        '<th class="p-3 text-left font-semibold">Mobile</th>' +
+        '<th class="p-3 text-center font-semibold">CGPA</th>' +
+        '<th class="p-3 text-center font-semibold">Arrears</th>' +
+        '<th class="p-3 text-center font-semibold">History</th>' +
+        '</tr></thead><tbody>';
+      for (const s of students) {
+        const cgpaColor = s.cgpa >= 9 ? 'text-green-700 font-bold' : s.cgpa >= 7 ? 'text-blue-700' : 'text-gray-700';
+        const arrearsColor = s.no_of_arrears === 0 ? 'text-green-700' : 'text-red-700 font-bold';
+        html += `<tr class="border-b hover:bg-gray-50">
+          <td class="p-3 font-semibold">${s.name}</td>
+          <td class="p-3 text-gray-600">${s.reg_no}</td>
+          <td class="p-3"><span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold">${s.dept}</span></td>
+          <td class="p-3 text-center">${s.year}</td>
+          <td class="p-3 text-center">${s.section}</td>
+          <td class="p-3 text-sm text-gray-600">${s.email}</td>
+          <td class="p-3 text-sm">${s.mobile_number}</td>
+          <td class="p-3 text-center ${cgpaColor}">${s.cgpa}</td>
+          <td class="p-3 text-center ${arrearsColor}">${s.no_of_arrears}</td>
+          <td class="p-3 text-center">${s.history_of_arrears ? '<span class="text-red-600">Yes</span>' : '<span class="text-green-600">No</span>'}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById('studentList').innerHTML = html;
+      // Populate filter dropdowns
+      document.getElementById('filterDept').innerHTML = '<option value="">All Departments</option>' + getUnique(students, 'dept').map(d => `<option value="${d}">${d}</option>`).join('');
+      document.getElementById('filterYear').innerHTML = '<option value="">All Years</option>' + getUnique(students, 'year').map(y => `<option value="${y}">${y}</option>`).join('');
+      document.getElementById('filterSection').innerHTML = '<option value="">All Sections</option>' + getUnique(students, 'section').map(s => `<option value="${s}">${s}</option>`).join('');
+      return students;
+    }
+
+    // Filter form logic
+    document.getElementById('filterForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const filters = {
+        dept: document.getElementById('filterDept').value,
+        year: document.getElementById('filterYear').value,
+        section: document.getElementById('filterSection').value,
+        arrears: document.getElementById('filterArrears').value
+      };
+      await loadStudents(filters);
+    };
+
+    // Add student modal logic
+    document.getElementById('addStudentBtn').onclick = () => {
+      document.getElementById('addStudentModal').classList.remove('hidden');
+    };
+    document.getElementById('closeAddStudent').onclick = () => {
+      document.getElementById('addStudentModal').classList.add('hidden');
+      document.getElementById('addStudentForm').reset();
+      document.getElementById('addStudentMsg').textContent = '';
+      document.getElementById('addStudentError').textContent = '';
+    };
+    document.getElementById('addStudentForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const student = {
+        name: form.name.value,
+        password: form.password.value,
+        reg_no: form.reg_no.value,
+        dept: form.dept.value,
+        year: parseInt(form.year.value),
+        section: form.section.value,
+        email: form.email.value,
+        mobile_number: form.mobile_number.value,
+        cgpa: parseFloat(form.cgpa.value),
+        no_of_arrears: parseInt(form.no_of_arrears.value),
+        history_of_arrears: form.history_of_arrears.value === 'true'
+      };
+      const { error } = await supabase.from('students').insert(student);
+      if (error) {
+        document.getElementById('addStudentError').textContent = error.message;
+        document.getElementById('addStudentMsg').textContent = '';
+      } else {
+        document.getElementById('addStudentMsg').textContent = 'Student added!';
+        document.getElementById('addStudentError').textContent = '';
+        form.reset();
+        setTimeout(() => {
+          document.getElementById('addStudentModal').classList.add('hidden');
+          loadStudents();
+        }, 1000);
+      }
+    };
+
+    // Bulk assign panel (use students table)
+    async function loadBulkAssignPanel() {
+      // Fetch all exams
+      const { data: exams, error: examError } = await supabase.from('exams').select('id,title');
+      if (examError) {
+        document.getElementById('errorMsg').textContent = examError.message;
+        return;
+      }
+      // Fetch all students (with dept, cgpa)
+      const { data: students, error: studentError } = await supabase.from('students').select('id,name,email,dept,cgpa');
+      if (studentError) {
+        document.getElementById('errorMsg').textContent = studentError.message;
+        return;
+      }
+      // Get unique departments and CGPA ranges
+      const depts = [...new Set(students.map(s => s.dept).filter(Boolean))];
+      let html = '<form id="bulkAssignForm" class="space-y-6">';
+      
+      // Exam selection
+      html += '<div>';
+      html += '<label class="block text-sm font-semibold mb-2">1. Select Exam to Assign *</label>';
+      html += '<select id="bulkExamId" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" required>';
+      html += '<option value="">Choose an Exam...</option>';
+      for (const exam of exams) {
+        html += `<option value="${exam.id}">${exam.title}</option>`;
+      }
+      html += '</select>';
+      html += '</div>';
+      
+      // Filter controls
+      html += '<div class="bg-gray-50 p-4 rounded-lg">';
+      html += '<label class="block text-sm font-semibold mb-3">2. Filter Students (Optional)</label>';
+      html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+      html += '<div>';
+      html += '<label class="block text-xs text-gray-600 mb-1">Department</label>';
+      html += '<select id="bulkDept" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500">';
+      html += '<option value="">All Departments</option>';
+      for (const d of depts) {
+        html += `<option value="${d}">${d}</option>`;
+      }
+      html += '</select>';
+      html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs text-gray-600 mb-1">Minimum CGPA</label>';
+      html += '<select id="bulkCgpa" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500">';
+      html += '<option value="">All CGPA</option>';
+      html += '<option value="9">9.0 and above</option>';
+      html += '<option value="8">8.0 and above</option>';
+      html += '<option value="7">7.0 and above</option>';
+      html += '<option value="6">6.0 and above</option>';
+      html += '</select>';
+      html += '</div>';
+      html += '<div class="flex items-end">';
+      html += '<button type="button" id="selectAllDeptBtn" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 font-semibold">✓ Select All Filtered</button>';
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+      
+      // Student list
+      html += '<div>';
+      html += '<label class="block text-sm font-semibold mb-2">3. Select Students *</label>';
+      html += '<div id="bulkStudentList" class="max-h-80 overflow-y-auto border rounded-lg p-3 bg-gray-50 space-y-2">';
+      // Initial student list
+      for (const s of students) {
+        html += `<label class="flex items-center p-2 hover:bg-white rounded cursor-pointer">
+          <input type="checkbox" name="studentIds" value="${s.id}" class="mr-3 w-4 h-4">
+          <div class="flex-1">
+            <span class="font-semibold">${s.name}</span>
+            <span class="text-sm text-gray-600 ml-2">(${s.email})</span>
+            <div class="text-xs text-gray-500">${s.dept} - Year ${s.year} | CGPA: ${s.cgpa}</div>
+          </div>
+        </label>`;
+      }
+      html += '</div>';
+      html += '</div>';
+      
+      html += '<button type="submit" class="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 font-semibold text-lg">✓ Assign Exam to Selected Students</button>';
+      html += '</form>';
+      document.getElementById('bulkAssignPanel').innerHTML = html;
+
+      // Filtering logic for students
+      function filterBulkStudents() {
+        const dept = document.getElementById('bulkDept').value;
+        const cgpa = document.getElementById('bulkCgpa').value;
+        let filtered = students;
+        if (dept) filtered = filtered.filter(s => s.dept === dept);
+        if (cgpa) filtered = filtered.filter(s => parseFloat(s.cgpa) >= parseFloat(cgpa));
+        let sHtml = '';
+        if (filtered.length === 0) {
+          sHtml = '<div class="text-center py-4 text-gray-500">No students match the filter criteria.</div>';
+        } else {
+          for (const s of filtered) {
+            sHtml += `<label class="flex items-center p-2 hover:bg-white rounded cursor-pointer">
+              <input type="checkbox" name="studentIds" value="${s.id}" class="mr-3 w-4 h-4">
+              <div class="flex-1">
+                <span class="font-semibold">${s.name}</span>
+                <span class="text-sm text-gray-600 ml-2">(${s.email})</span>
+                <div class="text-xs text-gray-500">${s.dept} - Year ${s.year} | CGPA: ${s.cgpa}</div>
+              </div>
+            </label>`;
+          }
+        }
+        document.getElementById('bulkStudentList').innerHTML = sHtml;
+      }
+      document.getElementById('bulkDept').onchange = filterBulkStudents;
+      document.getElementById('bulkCgpa').onchange = filterBulkStudents;
+
+      // Select all in department button logic
+      document.getElementById('selectAllDeptBtn').onclick = function() {
+        const dept = document.getElementById('bulkDept').value;
+        let filtered = students;
+        if (dept) filtered = filtered.filter(s => s.dept === dept);
+        // Check all checkboxes for filtered students
+        const allCheckboxes = document.querySelectorAll('#bulkStudentList input[type="checkbox"]');
+        for (const cb of allCheckboxes) {
+          const sid = cb.value;
+          if (filtered.some(s => s.id == sid)) cb.checked = true;
+        }
+      };
+
+      document.getElementById('bulkAssignForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const examId = document.getElementById('bulkExamId').value;
+        const checked = Array.from(document.querySelectorAll('input[name="studentIds"]:checked'));
+        if (!examId || checked.length === 0) {
+          document.getElementById('errorMsg').textContent = 'Select exam and at least one student.';
+          return;
+        }
+        let success = 0, alreadyAssigned = 0, fail = 0;
+        for (const cb of checked) {
+          const studentId = cb.value;
+          // Check if already assigned
+          const { data: exists } = await supabase.from('student_exam_map')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('exam_id', examId)
+            .maybeSingle();
+          if (exists) {
+            alreadyAssigned++;
+            continue;
+          }
+          const { error } = await supabase.from('student_exam_map').insert({ student_id: studentId, exam_id: examId });
+          if (error) fail++; else success++;
+        }
+        document.getElementById('assignMsg').textContent = `✓ ${success} student(s) assigned successfully!` + (alreadyAssigned ? ` (${alreadyAssigned} already assigned)` : '');
+        document.getElementById('errorMsg').textContent = fail ? `❌ ${fail} failed.` : '';
+        this.reset();
+        filterBulkStudents();
+      };
+    }
+
+    // Initial load
+    loadStudents();
+    loadBulkAssignPanel();
+  </script>
+</body>
+</html>

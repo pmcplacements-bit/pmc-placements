@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Instructions | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 md:p-12 w-full max-w-2xl fade-in">
+    <div class="text-center mb-8">
+      <div class="inline-block bg-blue-100 rounded-full p-4 mb-4">
+        <span class="material-icons text-blue-600" style="font-size: 48px;">description</span>
+      </div>
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">Exam Instructions</h1>
+      <p class="text-gray-600">Please read carefully before starting</p>
+    </div>
+    
+    <div id="examSelector" class="mb-6"></div>
+    <div id="instructions" class="mb-8 text-gray-700 bg-gray-50 rounded-xl p-6 border-l-4 border-blue-500">
+      <div class="flex items-center gap-2 text-blue-600 mb-4">
+        <span class="material-icons">info</span>
+        <span class="font-semibold">Loading instructions...</span>
+      </div>
+    </div>
+    
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-lg">
+      <div class="flex items-start gap-3">
+        <span class="material-icons text-yellow-600 mt-1">warning</span>
+        <div>
+          <h3 class="font-bold text-yellow-800 mb-2">Important Notes:</h3>
+          <ul class="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+            <li>Exam will run in fullscreen mode</li>
+            <li>Your answers are auto-saved</li>
+            <li>Do not refresh or close the browser</li>
+            <li>Ensure stable internet connection</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <label class="flex items-center mb-6 cursor-pointer group">
+      <input type="checkbox" id="agree" class="mr-3 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"> 
+      <span class="text-gray-700 group-hover:text-gray-900">I have read and agree to the exam instructions</span>
+    </label>
+    
+    <button id="startExamBtn" class="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+      <span class="material-icons">play_arrow</span>
+      <span>Start Exam</span>
+    </button>
+  </div>
+
+  <script>
+    // Initialize Supabase client (check if already exists to avoid redeclaration)
+    if (!window.supabaseClient) {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    }
+    
+    async function loadInstructions() {
+      try {
+        let examId = localStorage.getItem('exam_id');
+        if (!examId) {
+          // Try to get from API
+          const response = await fetch('/api/get_student_profile');
+          const data = await response.json();
+          
+          if (!data.student) {
+            document.getElementById('instructions').innerHTML = '<div class="text-red-600 flex items-center gap-2"><span class="material-icons">error</span><span>User not found. Please login again.</span></div>';
+            document.getElementById('startExamBtn').disabled = true;
+            return;
+          }
+          
+          const examsResponse = await fetch('/api/get_exams');
+          const examsData = await examsResponse.json();
+          const assigned = examsData.exams || [];
+          
+          if (!assigned || assigned.length === 0) {
+            document.getElementById('instructions').innerHTML = '<div class="text-gray-600 flex items-center gap-2"><span class="material-icons">inbox</span><span>No exams assigned to you yet.</span></div>';
+            document.getElementById('startExamBtn').disabled = true;
+            return;
+          }
+          
+          // Show dropdown
+          let examOptions = '<option value="">-- Select an Exam --</option>';
+          for (const exam of assigned) {
+            examOptions += `<option value='${exam.id}'>${exam.title}</option>`;
+          }
+          document.getElementById('examSelector').innerHTML = `
+            <label class='block font-semibold text-gray-700 mb-2'>Select Exam:</label>
+            <select id='examDropdown' class='w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none'>
+              ${examOptions}
+            </select>`;
+          document.getElementById('startExamBtn').disabled = true;
+          document.getElementById('examDropdown').onchange = async function() {
+            examId = this.value;
+            if (examId) {
+              localStorage.setItem('exam_id', examId);
+              await showInstructions(examId);
+            }
+          };
+          document.getElementById('instructions').innerHTML = '<div class="text-gray-500">Please select an exam from the dropdown above.</div>';
+          return;
+        }
+        await showInstructions(examId);
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('instructions').innerHTML = `<div class="text-red-600 flex items-center gap-2"><span class="material-icons">error</span><span>Error loading instructions: ${error.message}</span></div>`;
+      }
+    }
+
+    async function showInstructions(examId) {
+      try {
+        const { data: exam, error } = await window.supabaseClient.from('exams').select('title,instructions,duration,date').eq('id', examId).single();
+        if (error || !exam) {
+          document.getElementById('instructions').innerHTML = '<div class="text-red-600">Failed to load exam instructions.</div>';
+          document.getElementById('startExamBtn').disabled = true;
+          return;
+        }
+        
+        let html = `<div class="space-y-4">
+          <div class="flex items-center gap-2 text-blue-600 mb-4">
+            <span class="material-icons">assignment</span>
+            <h3 class="font-bold text-xl text-gray-800">${exam.title}</h3>
+          </div>
+          ${exam.duration ? `<div class="flex items-center gap-2 text-gray-600"><span class="material-icons text-sm">timer</span><span>Duration: ${exam.duration} minutes</span></div>` : ''}
+          ${exam.date ? `<div class="flex items-center gap-2 text-gray-600"><span class="material-icons text-sm">event</span><span>Date: ${new Date(exam.date).toLocaleString()}</span></div>` : ''}
+          <div class="mt-4 text-gray-700 whitespace-pre-wrap">${exam.instructions || 'No specific instructions provided. Please answer all questions to the best of your ability.'}</div>
+        </div>`;
+        
+        document.getElementById('instructions').innerHTML = html;
+        document.getElementById('startExamBtn').disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('instructions').innerHTML = `<div class="text-red-600">Error: ${error.message}</div>`;
+      }
+    }
+
+    loadInstructions();
+    
+    document.getElementById('agree').onchange = function() {
+      const examId = localStorage.getItem('exam_id');
+      document.getElementById('startExamBtn').disabled = !this.checked || !examId;
+    };
+    
+    document.getElementById('startExamBtn').onclick = function() {
+      window.location.href = '/exam_fullscreen';
+    };
+  </script>
+</body>
+</html>

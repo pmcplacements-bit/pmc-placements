@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results & Analytics | Placement Cell</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .stat-card { transition: all 0.3s; }
+    .stat-card:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .chart-container { position: relative; height: 300px; }
+    @media (max-width: 768px) {
+      .chart-container { height: 250px; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-indigo-50 to-purple-50 min-h-screen">
+  <!-- Enhanced Navbar -->
+  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-2xl">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
+        <div class="flex items-center space-x-2 md:space-x-4 w-full md:w-auto">
+          <div class="bg-white bg-opacity-20 rounded-lg p-2">
+            <span class="material-icons text-2xl md:text-3xl">insights</span>
+          </div>
+          <div class="flex-1">
+            <h1 class="font-bold text-lg md:text-2xl">Results & Analytics</h1>
+            <p class="text-xs text-blue-100 hidden sm:block">Performance Insights & Reports</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+          <button id="exportBtn" class="flex-1 md:flex-none bg-green-500 hover:bg-green-600 text-white px-3 md:px-6 py-2 rounded-lg transition flex items-center justify-center gap-2 shadow-lg">
+            <span class="material-icons text-sm">download</span>
+            <span class="text-sm md:text-base">Export CSV</span>
+          </button>
+          <a href="{{ url_for('admin_dashboard') }}" class="flex-1 md:flex-none bg-white text-blue-800 px-3 md:px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2 shadow-lg">
+            <span class="material-icons text-sm">dashboard</span>
+            <span class="text-sm md:text-base">Dashboard</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-4 md:py-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 md:mb-6">
+      <h2 class="text-xl md:text-3xl font-bold text-gray-800 flex items-center gap-2 md:gap-3">
+        <span class="material-icons text-3xl md:text-4xl text-indigo-600">analytics</span>
+        Exam Performance
+      </h2>
+      <button onclick="loadAnalytics()" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg transition">
+        <span class="material-icons text-sm">refresh</span>
+        <span class="text-sm font-semibold">Refresh</span>
+      </button>
+    </div>
+    <div id="analyticsPanel" class="space-y-4 md:space-y-8"></div>
+  </div>
+
+  <script>
+    // Initialize Supabase client (check if already exists to avoid redeclaration)
+    if (!window.supabaseClient) {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    }
+    let chartInstances = [];
+
+    async function loadAnalytics() {
+      // Destroy existing charts
+      chartInstances.forEach(chart => chart.destroy());
+      chartInstances = [];
+
+      const { data: exams } = await window.supabaseClient.from('exams').select('id,title');
+      
+      if (!exams || exams.length === 0) {
+        document.getElementById('analyticsPanel').innerHTML = '<div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 md:p-8 text-center"><span class="material-icons text-5xl md:text-6xl text-gray-400 mb-2">bar_chart</span><p class="text-gray-500 text-base md:text-lg">No exam data available</p></div>';
+        return;
+      }
+      
+      let html = '';
+      let examIndex = 0;
+      
+      for (const exam of exams) {
+        const { data: submissions } = await window.supabaseClient.from('submissions').select('*').eq('exam_id', exam.id);
+        const scores = submissions ? submissions.map(s => parseFloat(s.percentage || s.score || 0)) : [];
+        const avg = scores.length ? (scores.reduce((a,b) => a+b,0)/scores.length).toFixed(1) : 0;
+        const max = scores.length ? Math.max(...scores) : 0;
+        const min = scores.length ? Math.min(...scores) : 0;
+        const passCount = scores.filter(s => s >= 60).length;
+        const failCount = scores.length - passCount;
+        
+        // Calculate distribution
+        const ranges = { '90-100': 0, '75-89': 0, '60-74': 0, '50-59': 0, '0-49': 0 };
+        scores.forEach(s => {
+          if (s >= 90) ranges['90-100']++;
+          else if (s >= 75) ranges['75-89']++;
+          else if (s >= 60) ranges['60-74']++;
+          else if (s >= 50) ranges['50-59']++;
+          else ranges['0-49']++;
+        });
+        
+        html += `<div class="bg-white rounded-xl md:rounded-2xl shadow-2xl overflow-hidden border-t-4 border-indigo-500">
+          <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 md:p-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div class="flex items-center gap-2 md:gap-4">
+                <div class="bg-white bg-opacity-20 rounded-lg md:rounded-xl p-2 md:p-3 animate-pulse">
+                  <span class="material-icons text-3xl md:text-4xl">assessment</span>
+                </div>
+                <div>
+                  <h3 class="text-lg md:text-2xl font-bold">${exam.title}</h3>
+                  <p class="text-indigo-100 text-xs md:text-sm flex items-center gap-2">
+                    <span class="material-icons text-xs">people</span>
+                    ${scores.length} submissions
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <div class="bg-green-500 bg-opacity-30 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
+                  <div class="text-xl md:text-2xl font-bold">${passCount}</div>
+                  <div class="text-xs">Passed</div>
+                </div>
+                <div class="bg-red-500 bg-opacity-30 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
+                  <div class="text-xl md:text-2xl font-bold">${failCount}</div>
+                  <div class="text-xs">Failed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-4 md:p-6">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center stat-card border-2 border-blue-200">
+                <span class="material-icons text-blue-600 text-3xl mb-2">groups</span>
+                <p class="text-2xl md:text-3xl font-bold text-blue-800">${scores.length}</p>
+                <p class="text-xs text-blue-600 font-semibold">Participants</p>
+              </div>
+              <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 text-center stat-card border-2 border-green-200">
+                <span class="material-icons text-green-600 text-3xl mb-2">trending_up</span>
+                <p class="text-2xl md:text-3xl font-bold text-green-800">${avg}%</p>
+                <p class="text-xs text-green-600 font-semibold">Average</p>
+              </div>
+              <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center stat-card border-2 border-purple-200">
+                <span class="material-icons text-purple-600 text-3xl mb-2">workspace_premium</span>
+                <p class="text-2xl md:text-3xl font-bold text-purple-800">${max}%</p>
+                <p class="text-xs text-purple-600 font-semibold">Highest</p>
+              </div>
+              <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 text-center stat-card border-2 border-orange-200">
+                <span class="material-icons text-orange-600 text-3xl mb-2">trending_down</span>
+                <p class="text-2xl md:text-3xl font-bold text-orange-800">${min}%</p>
+                <p class="text-xs text-orange-600 font-semibold">Lowest</p>
+              </div>
+            </div>
+            
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <!-- Score Distribution Pie Chart -->
+              <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 md:p-6 border-2 border-purple-200">
+                <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
+                  <span class="material-icons text-purple-600">pie_chart</span>
+                  Score Distribution
+                </h4>
+                <div class="chart-container">
+                  <canvas id="pieChart${examIndex}"></canvas>
+                </div>
+              </div>
+              
+              <!-- Grade Distribution Bar Chart -->
+              <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 md:p-6 border-2 border-blue-200">
+                <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
+                  <span class="material-icons text-blue-600">bar_chart</span>
+                  Grade Analysis
+                </h4>
+                <div class="chart-container">
+                  <canvas id="barChart${examIndex}"></canvas>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Performance Trends -->
+            ${scores.length > 0 ? `<div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 md:p-6 border-2 border-green-200 mb-6">
+              <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
+                <span class="material-icons text-green-600">show_chart</span>
+                Score Trend
+              </h4>
+              <div class="chart-container">
+                <canvas id="lineChart${examIndex}"></canvas>
+              </div>
+            </div>` : ''}
+            
+            <!-- Question-wise Accuracy -->
+            ${await renderQuestionAnalysis(exam.id, submissions || [], examIndex)}
+          </div>
+        </div>`;
+        
+        examIndex++;
+      }
+      
+      document.getElementById('analyticsPanel').innerHTML = html;
+      
+      // Create charts after HTML is rendered
+      examIndex = 0;
+      for (const exam of exams) {
+        const { data: submissions } = await window.supabaseClient.from('submissions').select('*').eq('exam_id', exam.id);
+        const scores = submissions ? submissions.map(s => parseFloat(s.percentage || s.score || 0)) : [];
+        
+        if (scores.length > 0) {
+          createCharts(examIndex, scores);
+          await createQuestionChart(exam.id, submissions || [], examIndex);
+        }
+        examIndex++;
+      }
+    }
+    
+    function createCharts(examIndex, scores) {
+      // Calculate distribution
+      const ranges = { '90-100': 0, '75-89': 0, '60-74': 0, '50-59': 0, '0-49': 0 };
+      scores.forEach(s => {
+        if (s >= 90) ranges['90-100']++;
+        else if (s >= 75) ranges['75-89']++;
+        else if (s >= 60) ranges['60-74']++;
+        else if (s >= 50) ranges['50-59']++;
+        else ranges['0-49']++;
+      });
+      
+      // Pie Chart - Score Distribution
+      const pieCtx = document.getElementById(`pieChart${examIndex}`);
+      if (pieCtx) {
+        const pieChart = new Chart(pieCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['90-100%', '75-89%', '60-74%', '50-59%', '0-49%'],
+            datasets: [{
+              data: [ranges['90-100'], ranges['75-89'], ranges['60-74'], ranges['50-59'], ranges['0-49']],
+              backgroundColor: ['#10b981', '#3b82f6', '#eab308', '#f97316', '#ef4444'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { padding: 15, font: { size: 11 } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                    return context.label + ': ' + context.parsed + ' students (' + percentage + '%)';
+                  }
+                }
+              }
+            }
+          }
+        });
+        chartInstances.push(pieChart);
+      }
+      
+      // Bar Chart - Grade Distribution
+      const barCtx = document.getElementById(`barChart${examIndex}`);
+      if (barCtx) {
+        const barChart = new Chart(barCtx, {
+          type: 'bar',
+          data: {
+            labels: ['90-100%', '75-89%', '60-74%', '50-59%', '0-49%'],
+            datasets: [{
+              label: 'Number of Students',
+              data: [ranges['90-100'], ranges['75-89'], ranges['60-74'], ranges['50-59'], ranges['0-49']],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(234, 179, 8, 0.8)',
+                'rgba(249, 115, 22, 0.8)',
+                'rgba(239, 68, 68, 0.8)'
+              ],
+              borderColor: [
+                'rgb(16, 185, 129)',
+                'rgb(59, 130, 246)',
+                'rgb(234, 179, 8)',
+                'rgb(249, 115, 22)',
+                'rgb(239, 68, 68)'
+              ],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.parsed.y + ' students';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+              }
+            }
+          }
+        });
+        chartInstances.push(barChart);
+      }
+      
+      // Line Chart - Score Trend
+      const lineCtx = document.getElementById(`lineChart${examIndex}`);
+      if (lineCtx) {
+        const sortedScores = [...scores].sort((a, b) => a - b);
+        const lineChart = new Chart(lineCtx, {
+          type: 'line',
+          data: {
+            labels: sortedScores.map((_, i) => `Student ${i + 1}`),
+            datasets: [{
+              label: 'Score (%)',
+              data: sortedScores,
+              borderColor: 'rgb(99, 102, 241)',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointBackgroundColor: sortedScores.map(s => s >= 60 ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true, position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return 'Score: ' + context.parsed.y.toFixed(1) + '%';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: function(value) { return value + '%'; } }
+              },
+              x: {
+                display: false
+              }
+            }
+          }
+        });
+        chartInstances.push(lineChart);
+      }
+    }
+    
+    async function renderQuestionAnalysis(examId, submissions, examIndex) {
+      const { data: questions } = await window.supabaseClient.from('questions').select('id,question_text,correct_answer').eq('exam_id', examId);
+      
+      if (!questions || questions.length === 0) {
+        return '<div class="text-gray-500 text-center py-4">No questions in this exam</div>';
+      }
+      
+      return `<div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 md:p-6 border-2 border-indigo-200">
+        <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
+          <span class="material-icons text-indigo-600">psychology</span>
+          Question-wise Accuracy
+        </h4>
+        <div class="chart-container" style="height: ${Math.max(250, questions.length * 40)}px;">
+          <canvas id="questionChart${examIndex}"></canvas>
+        </div>
+      </div>`;
+    }
+    
+    async function createQuestionChart(examId, submissions, examIndex) {
+      const { data: questions } = await window.supabaseClient.from('questions').select('id,question_text,correct_answer').eq('exam_id', examId);
+      
+      if (!questions || questions.length === 0) {
+        return;
+      }
+      
+      let questionAccuracies = [];
+      let questionLabels = [];
+      let questionColors = [];
+      
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        let correct = 0, total = 0;
+        for (const sub of submissions) {
+          if (!sub.answers) continue;
+          let ansObj = {};
+          try { ansObj = typeof sub.answers === 'string' ? JSON.parse(sub.answers) : sub.answers; } catch {}
+          if (ansObj[q.id] !== undefined) {
+            total++;
+            if (String(ansObj[q.id]).trim().toUpperCase() === String(q.correct_answer).trim().toUpperCase()) {
+              correct++;
+            }
+          }
+        }
+        const acc = total ? ((correct/total)*100).toFixed(1) : 0;
+        questionAccuracies.push(parseFloat(acc));
+        questionLabels.push(`Q${i + 1}`);
+        
+        if (acc >= 75) questionColors.push({ bg: 'rgba(16, 185, 129, 0.8)', border: 'rgb(16, 185, 129)' });
+        else if (acc >= 50) questionColors.push({ bg: 'rgba(234, 179, 8, 0.8)', border: 'rgb(234, 179, 8)' });
+        else questionColors.push({ bg: 'rgba(239, 68, 68, 0.8)', border: 'rgb(239, 68, 68)' });
+      }
+      
+      const ctx = document.getElementById(`questionChart${examIndex}`);
+      if (ctx) {
+        const chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: questionLabels,
+            datasets: [{
+              label: 'Accuracy (%)',
+              data: questionAccuracies,
+              backgroundColor: questionColors.map(c => c.bg),
+              borderColor: questionColors.map(c => c.border),
+              borderWidth: 2
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  title: function(context) {
+                    const qIndex = context[0].dataIndex;
+                    const qText = questions[qIndex].question_text;
+                    return qText.length > 60 ? qText.substring(0, 60) + '...' : qText;
+                  },
+                  label: function(context) {
+                    return 'Accuracy: ' + context.parsed.x + '%';
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: function(value) { return value + '%'; } }
+              }
+            }
+          }
+        });
+        chartInstances.push(chart);
+      }
+    }
+    
+    // Old function kept for reference - can be removed
+    async function renderQuestionAnalysisOld(examId, submissions) {
+      const { data: questions } = await window.supabaseClient.from('questions').select('id,question_text,correct_answer').eq('exam_id', examId);
+      
+      if (!questions || questions.length === 0) {
+        return '<div class="text-gray-500 text-center py-4">No questions in this exam</div>';
+      }
+      
+      let html = `<div class="bg-purple-50 rounded-lg md:rounded-xl p-4 md:p-6">
+        <h4 class="font-bold text-base md:text-xl text-gray-800 mb-3 md:mb-4 flex items-center gap-2">
+          <span class="material-icons text-purple-600">quiz</span>
+          Question-wise Accuracy
+        </h4>
+        <div class="space-y-2 md:space-y-3">`;
+      
+      for (const q of questions) {
+        let correct = 0, total = 0;
+        for (const sub of submissions) {
+          if (!sub.answers) continue;
+          let ansObj = {};
+          try { ansObj = typeof sub.answers === 'string' ? JSON.parse(sub.answers) : sub.answers; } catch {}
+          if (ansObj[q.id] !== undefined) {
+            total++;
+            if (ansObj[q.id] === q.correct_answer) correct++;
+          }
+        }
+        const acc = total ? ((correct/total)*100).toFixed(1) : 0;
+        let color = 'bg-red-500';
+        if (acc >= 75) color = 'bg-green-500';
+        else if (acc >= 50) color = 'bg-yellow-500';
+        
+        html += `<div class="bg-white rounded-lg p-3 md:p-4 border border-gray-200">
+          <div class="flex justify-between items-start gap-2 mb-2">
+            <p class="text-xs md:text-sm font-semibold text-gray-800 flex-1">${q.question_text}</p>
+            <span class="text-xs md:text-sm font-bold whitespace-nowrap ${acc >= 75 ? 'text-green-600' : acc >= 50 ? 'text-yellow-600' : 'text-red-600'}">${acc}%</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-gray-600 mb-2">
+            <span>${correct}/${total} correct</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div class="${color} h-2 rounded-full progress-bar" style="width: ${acc}%"></div>
+          </div>
+        </div>`;
+      }
+      
+      html += '</div></div>';
+      return html;
+    }
+    
+    // CSV Export function
+    document.getElementById('exportBtn').onclick = async () => {
+      const { data } = await window.supabaseClient.from('submissions').select('*');
+      if (!data || data.length === 0) {
+        alert('No submission data to export');
+        return;
+      }
+      
+      // Convert to CSV
+      const headers = Object.keys(data[0]);
+      let csv = headers.join(',') + '\\n';
+      data.forEach(row => {
+        csv += headers.map(header => {
+          const value = row[header];
+          return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+        }).join(',') + '\\n';
+      });
+      
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `submissions_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    };
+    
+    loadAnalytics();
+  </script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+    .slide-in { animation: slideIn 0.6s ease-out; }
+    .hover-lift { transition: all 0.3s ease; }
+    .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.2); }
+    .stat-card { transition: all 0.3s; }
+    .stat-card:hover { transform: scale(1.05); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 min-h-screen">
+  <!-- Enhanced Navbar -->
+  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-2xl">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="bg-white bg-opacity-20 rounded-lg p-2">
+            <span class="material-icons text-3xl">admin_panel_settings</span>
+          </div>
+          <div>
+            <h1 class="font-bold text-2xl">Training & Placement Cell</h1>
+            <p class="text-xs text-blue-100">Administrator Portal</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="hidden md:flex items-center gap-3 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg px-4 py-2">
+            <span class="material-icons">person</span>
+            <div class="text-sm">
+              <p class="font-semibold">Administrator</p>
+              <p class="text-xs text-blue-100">Full Access</p>
+            </div>
+          </div>
+          <button id="logoutBtn" class="bg-red-500 px-6 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-2 shadow-lg">
+            <span class="material-icons text-sm">logout</span>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Hero Section -->
+    <section class="mb-8 slide-in">
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <h2 class="text-4xl font-bold mb-2">Welcome Back, Admin!</h2>
+            <p class="text-blue-100 text-lg">Manage your examination system efficiently</p>
+            <p class="text-blue-200 text-sm mt-1" id="currentDate"></p>
+          </div>
+          <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4">
+            <div class="text-center">
+              <span class="material-icons text-6xl mb-2">verified_user</span>
+              <p class="text-sm font-semibold">System Status</p>
+              <p class="text-xs text-green-200">● All Systems Operational</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Overview -->
+    <section class="mb-8 fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span class="material-icons text-3xl text-blue-600">analytics</span>
+          Quick Statistics
+        </h3>
+        <button onclick="loadDashboardStats()" class="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition">
+          <span class="material-icons text-sm">refresh</span>
+          <span class="text-sm font-semibold">Refresh</span>
+        </button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-blue-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-semibold">Total Students</p>
+              <p class="text-3xl font-bold text-blue-600" id="totalStudents">0</p>
+            </div>
+            <div class="bg-blue-100 rounded-full p-3">
+              <span class="material-icons text-blue-600 text-3xl">school</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-green-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-semibold">Active Exams</p>
+              <p class="text-3xl font-bold text-green-600" id="activeExams">0</p>
+            </div>
+            <div class="bg-green-100 rounded-full p-3">
+              <span class="material-icons text-green-600 text-3xl">assignment</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-purple-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-semibold">Questions</p>
+              <p class="text-3xl font-bold text-purple-600" id="totalQuestions">0</p>
+            </div>
+            <div class="bg-purple-100 rounded-full p-3">
+              <span class="material-icons text-purple-600 text-3xl">quiz</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-orange-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-semibold">Submissions</p>
+              <p class="text-3xl font-bold text-orange-600" id="totalSubmissions">0</p>
+            </div>
+            <div class="bg-orange-100 rounded-full p-3">
+              <span class="material-icons text-orange-600 text-3xl">send</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Navigation Cards -->
+    <section class="mb-8 fade-in">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <span class="material-icons text-3xl text-blue-600">dashboard</span>
+        Management Console
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Create Exam Card -->
+        <a href="{{ url_for('create_exam') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-blue-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-blue-100 rounded-xl p-4 group-hover:bg-blue-200 transition">
+                <span class="material-icons text-blue-600 text-4xl">add_circle</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-blue-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Create Exam</h4>
+            <p class="text-gray-600 text-sm">Design new exams with questions, set duration, and configure exam parameters</p>
+            <div class="mt-4 flex items-center gap-2 text-blue-600 font-semibold text-sm">
+              <span>Get Started</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Manage Exams Card -->
+        <a href="{{ url_for('manage_exams') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-green-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-green-100 rounded-xl p-4 group-hover:bg-green-200 transition">
+                <span class="material-icons text-green-600 text-4xl">folder_open</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-green-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Manage Exams</h4>
+            <p class="text-gray-600 text-sm">View, edit, delete, and organize all exams in the system</p>
+            <div class="mt-4 flex items-center gap-2 text-green-600 font-semibold text-sm">
+              <span>Manage Now</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Question Bank Card -->
+        <a href="{{ url_for('question_bank') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-purple-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-purple-100 rounded-xl p-4 group-hover:bg-purple-200 transition">
+                <span class="material-icons text-purple-600 text-4xl">library_books</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-purple-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Resource Management</h4>
+            <p class="text-gray-600 text-sm">Post resources and documents which are useful for students</p>
+            <div class="mt-4 flex items-center gap-2 text-purple-600 font-semibold text-sm">
+              <span>Browse Resources</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Student Management Card -->
+        <a href="{{ url_for('student_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-yellow-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-yellow-100 rounded-xl p-4 group-hover:bg-yellow-200 transition">
+                <span class="material-icons text-yellow-600 text-4xl">groups</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-yellow-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Student Management</h4>
+            <p class="text-gray-600 text-sm">Add, update, filter students, and assign exams to specific groups</p>
+            <div class="mt-4 flex items-center gap-2 text-yellow-600 font-semibold text-sm">
+              <span>Manage Students</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Live Monitoring Card -->
+        <a href="{{ url_for('live_monitoring') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-red-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-red-100 rounded-xl p-4 group-hover:bg-red-200 transition">
+                <span class="material-icons text-red-600 text-4xl">monitor</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-red-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Live Monitoring</h4>
+            <p class="text-gray-600 text-sm">Monitor ongoing exams, track student activity in real-time</p>
+            <div class="mt-4 flex items-center gap-2 text-red-600 font-semibold text-sm">
+              <span>Monitor Now</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Results & Analytics Card -->
+        <a href="{{ url_for('results_analytics') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-indigo-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-indigo-100 rounded-xl p-4 group-hover:bg-indigo-200 transition">
+                <span class="material-icons text-indigo-600 text-4xl">insights</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-indigo-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Results & Analytics</h4>
+            <p class="text-gray-600 text-sm">View exam results, generate reports, and analyze performance trends</p>
+            <div class="mt-4 flex items-center gap-2 text-indigo-600 font-semibold text-sm">
+              <span>View Analytics</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Events Management Card -->
+        <a href="{{ url_for('events_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-pink-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-pink-100 rounded-xl p-4 group-hover:bg-pink-200 transition">
+                <span class="material-icons text-pink-600 text-4xl">event</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-pink-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Events Management</h4>
+            <p class="text-gray-600 text-sm">Manage campus events, upload circulars, posters, and announcements</p>
+            <div class="mt-4 flex items-center gap-2 text-pink-600 font-semibold text-sm">
+              <span>Manage Events</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Circulars Management Card -->
+        <a href="{{ url_for('circulars_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-cyan-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-cyan-100 rounded-xl p-4 group-hover:bg-cyan-200 transition">
+                <span class="material-icons text-cyan-600 text-4xl">campaign</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-cyan-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Circulars Management</h4>
+            <p class="text-gray-600 text-sm">Create and publish circulars, notices, and important announcements to students</p>
+            <div class="mt-4 flex items-center gap-2 text-cyan-600 font-semibold text-sm">
+              <span>Manage Circulars</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Recent Activity Section -->
+    <section class="fade-in">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <span class="material-icons text-3xl text-blue-600">history</span>
+        Quick Actions
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="bg-blue-100 rounded-lg p-2">
+              <span class="material-icons text-blue-600">file_upload</span>
+            </div>
+            <h4 class="font-bold text-gray-800">Bulk Upload</h4>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Import multiple students or questions at once</p>
+          <a href="{{ url_for('student_management') }}" class="text-blue-600 text-sm font-semibold hover:underline">Upload Now →</a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="bg-green-100 rounded-lg p-2">
+              <span class="material-icons text-green-600">download</span>
+            </div>
+            <h4 class="font-bold text-gray-800">Export Data</h4>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Download student data, results, or reports</p>
+          <a href="{{ url_for('results_analytics') }}" class="text-green-600 text-sm font-semibold hover:underline">Export Now →</a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="bg-purple-100 rounded-lg p-2">
+              <span class="material-icons text-purple-600">help</span>
+            </div>
+            <h4 class="font-bold text-gray-800">Help & Support</h4>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Access documentation and troubleshooting guides</p>
+          <a href="#" class="text-purple-600 text-sm font-semibold hover:underline">Get Help →</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Logout handler
+    document.getElementById('logoutBtn').onclick = () => {
+      window.location.href = '/logout';
+    };
+
+    // Display current date
+    const dateElement = document.getElementById('currentDate');
+    const now = new Date();
+    dateElement.textContent = now.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
+    // Fetch and display statistics
+    async function loadDashboardStats() {
+      try {
+        // Show loading state
+        document.getElementById('totalStudents').textContent = '...';
+        document.getElementById('activeExams').textContent = '...';
+        document.getElementById('totalQuestions').textContent = '...';
+        document.getElementById('totalSubmissions').textContent = '...';
+        
+        // Fetch real statistics from API
+        const statsRes = await fetch('/api/dashboard_stats');
+        const stats = await statsRes.json();
+        
+        // Animate counter updates
+        animateCounter('totalStudents', stats.students || 0);
+        animateCounter('activeExams', stats.exams || 0);
+        animateCounter('totalQuestions', stats.questions || 0);
+        animateCounter('totalSubmissions', stats.submissions || 0);
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+        // Show 0 on error
+        document.getElementById('totalStudents').textContent = '0';
+        document.getElementById('activeExams').textContent = '0';
+        document.getElementById('totalQuestions').textContent = '0';
+        document.getElementById('totalSubmissions').textContent = '0';
+      }
+    }
+    
+    // Animate counter from 0 to target value
+    function animateCounter(elementId, targetValue) {
+      const element = document.getElementById(elementId);
+      const duration = 1000; // 1 second
+      const steps = 30;
+      const increment = targetValue / steps;
+      let currentValue = 0;
+      let stepCount = 0;
+      
+      const timer = setInterval(() => {
+        stepCount++;
+        currentValue += increment;
+        
+        if (stepCount >= steps) {
+          element.textContent = targetValue;
+          clearInterval(timer);
+        } else {
+          element.textContent = Math.floor(currentValue);
+        }
+      }, duration / steps);
+    }
+
+    // Load stats on page load
+    loadDashboardStats();
+  </script>
+</body>
+</html>

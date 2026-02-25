@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resource Manager | Placement Cell</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    .hover-lift { transition: all 0.3s; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-purple-50 to-indigo-50 min-h-screen">
+  <!-- Enhanced Navbar -->
+  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-2xl">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="bg-white bg-opacity-20 rounded-lg p-2">
+            <span class="material-icons text-3xl">library_books</span>
+          </div>
+          <div>
+            <h1 class="font-bold text-2xl">Resource Manager</h1>
+            <p class="text-xs text-blue-100">Allocate Documents to Students</p>
+          </div>
+        </div>
+        <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-800 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-lg">
+          <span class="material-icons text-sm">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Upload Section -->
+    <section class="mb-8">
+      <div class="bg-white rounded-2xl shadow-xl p-8">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="bg-purple-100 rounded-xl p-3">
+            <span class="material-icons text-purple-600 text-3xl">file_upload</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">Upload Resources</h2>
+            <p class="text-gray-600 text-sm">Upload study materials, PDFs, videos, and documents for students</p>
+          </div>
+        </div>
+        <form id="uploadCSVForm" class="space-y-4">
+          <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition">
+            <input type="file" id="csvFile" class="hidden">
+            <label for="csvFile" class="cursor-pointer">
+              <span class="material-icons text-6xl text-gray-400 mb-2 block">cloud_upload</span>
+              <p class="text-gray-600 font-semibold">Click to select file</p>
+              <p class="text-gray-400 text-sm mt-1">PDFs, Videos, Images, Documents - All file types supported</p>
+            </label>
+          </div>
+          <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-lg font-bold hover:from-purple-700 hover:to-indigo-700 transition flex items-center justify-center gap-2">
+            <span class="material-icons">upload</span>
+            <span>Upload Resource</span>
+          </button>
+        </form>
+        <div id="uploadMsg" class="mt-4"></div>
+        <div id="errorMsg" class="mt-4"></div>
+      </div>
+    </section>
+
+    <!-- Resources List -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+          <span class="material-icons text-4xl text-purple-600">folder</span>
+          All Resources
+        </h3>
+        <button onclick="loadResources()" class="flex items-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg transition">
+          <span class="material-icons text-sm">refresh</span>
+          <span class="text-sm font-semibold">Refresh</span>
+        </button>
+      </div>
+      <div id="resourcesList" class="grid grid-cols-1 gap-4"></div>
+    </section>
+  </div>
+
+  <script>
+    // Initialize Supabase client (v2 - cache-busted)
+    (function() {
+      const { createClient } = window.supabase;
+      window.supabaseClient = createClient(
+        'https://kflhmnyikwaznzkgeini.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
+      );
+    })();
+    
+    // Update file input label when file selected
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+      const label = e.target.nextElementSibling;
+      if (e.target.files.length > 0) {
+        label.querySelector('p').textContent = `Selected: ${e.target.files[0].name}`;
+      }
+    });
+
+    document.getElementById('uploadCSVForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('csvFile');
+      if (!fileInput.files.length) {
+        document.getElementById('errorMsg').innerHTML = '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">Please select a file</div>';
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      
+      try {
+        // Step 1: Upload to Supabase Storage
+        document.getElementById('uploadMsg').innerHTML = `<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span><span>Uploading ${file.name} to storage...</span></div>`;
+        document.getElementById('errorMsg').innerHTML = '';
+        
+        const fileName = `${Date.now()}_${file.name}`;
+        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+          .from('Files')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type
+          });
+        
+        if (uploadError) {
+          console.error('Upload error details:', uploadError);
+          let errorMsg = uploadError.message;
+          if (errorMsg.includes('row-level security')) {
+            errorMsg += '<br><br><strong>Fix:</strong> Go to Supabase Dashboard → Storage → Files bucket → Policies → Add this policy:<br><code>Allow public INSERT: true</code>';
+          }
+          throw new Error(`Storage upload failed: ${errorMsg}`);
+        }
+        
+        // Store resource metadata in database
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileSize = (file.size / (1024 * 1024)).toFixed(2); // MB
+        
+        const { error: dbError } = await window.supabaseClient.from('resources').insert({
+          file_name: fileName,
+          original_name: file.name,
+          file_type: fileExt,
+          file_size: fileSize,
+          storage_path: fileName,
+          uploaded_at: new Date().toISOString(),
+          allocated_students: [] // Empty array initially - admin will allocate later
+        });
+        
+        if (dbError) {
+          console.error('Database insert error:', dbError);
+          // File uploaded to storage but metadata failed - still show success
+        }
+        
+        document.getElementById('uploadMsg').innerHTML = `<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-icons">check_circle</span>
+            <span class="font-bold">Upload Complete!</span>
+          </div>
+          <div class="text-sm">
+            <p>✓ File: ${file.name}</p>
+            <p>✓ Size: ${fileSize} MB</p>
+            <p>✓ Saved to storage successfully</p>
+            <p class="text-blue-600 mt-2">→ Now allocate this resource to students below</p>
+          </div>
+        </div>`;
+        document.getElementById('errorMsg').innerHTML = '';
+        fileInput.value = '';
+        const label = fileInput.nextElementSibling;
+        label.querySelector('p').textContent = 'Click to select file';
+        
+        // Reload resources list
+        loadResources();
+        
+      } catch (error) {
+        document.getElementById('errorMsg').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">error</span><span>${error.message}</span></div>`;
+        document.getElementById('uploadMsg').innerHTML = '';
+      }
+    });
+    
+    async function loadResources() {
+      const { data: resources, error } = await window.supabaseClient.from('resources').select('*').order('uploaded_at', { ascending: false });
+      
+      if (error) {
+        document.getElementById('resourcesList').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">Error: ${error.message}<br><small>Make sure "resources" table exists in your database</small></div>`;
+        return;
+      }
+      
+      if (!resources || resources.length === 0) {
+        document.getElementById('resourcesList').innerHTML = '<div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center"><span class="material-icons text-6xl text-gray-400 mb-2">folder_open</span><p class="text-gray-500 text-lg">No resources uploaded yet.</p></div>';
+        return;
+      }
+      
+      // Fetch all students
+      const { data: students } = await window.supabaseClient.from('students').select('id, name, reg_no');
+      
+      let html = '';
+      for (const resource of resources) {
+        const allocatedCount = resource.allocated_students?.length || 0;
+        const fileIcon = getFileIcon(resource.file_type);
+        const { data: urlData } = window.supabaseClient.storage.from('Files').getPublicUrl(resource.storage_path);
+        const fileUrl = urlData.publicUrl;
+        
+        html += `<div class="bg-white rounded-xl shadow-lg p-6 hover-lift border-l-4 border-purple-500">
+          <div class="flex items-start gap-4">
+            <div class="bg-purple-50 rounded-xl p-3">
+              <span class="material-icons ${fileIcon.color} text-4xl">${fileIcon.icon}</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-xl text-gray-800 mb-2">${resource.original_name}</h3>
+              <div class="flex flex-wrap gap-3 mb-3 text-sm text-gray-600">
+                <span class="flex items-center gap-1"><span class="material-icons text-sm">insert_drive_file</span>${resource.file_type.toUpperCase()}</span>
+                <span class="flex items-center gap-1"><span class="material-icons text-sm">data_usage</span>${resource.file_size} MB</span>
+                <span class="flex items-center gap-1"><span class="material-icons text-sm">people</span>${allocatedCount} students</span>
+              </div>
+              
+              <div class="flex gap-2 mb-3">
+                <a href="${fileUrl}" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold flex items-center gap-1">
+                  <span class="material-icons text-sm">visibility</span>View
+                </a>
+                <button onclick="deleteResource('${resource.id}', '${resource.storage_path}')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-semibold flex items-center gap-1">
+                  <span class="material-icons text-sm">delete</span>Delete
+                </button>
+                <button onclick="showAllocateModal('${resource.id}', '${resource.original_name}')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold flex items-center gap-1">
+                  <span class="material-icons text-sm">person_add</span>Allocate Students
+                </button>
+              </div>
+              
+              ${allocatedCount > 0 ? `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p class="text-sm font-semibold text-green-800 mb-2">Allocated to:</p>
+                  <div class="flex flex-wrap gap-2">
+                    ${resource.allocated_students.map(sid => {
+                      const student = students?.find(s => s.id === sid);
+                      return student ? `<span class="bg-white px-3 py-1 rounded-full text-xs border border-green-300">${student.name} (${student.reg_no})</span>` : '';
+                    }).join('')}
+                  </div>
+                </div>
+              ` : '<p class="text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded">⚠ Not allocated to any students yet</p>'}
+            </div>
+          </div>
+        </div>`;
+      }
+      document.getElementById('resourcesList').innerHTML = html;
+    }
+    
+    function getFileIcon(fileType) {
+      const icons = {
+        pdf: { icon: 'picture_as_pdf', color: 'text-red-600' },
+        doc: { icon: 'description', color: 'text-blue-600' },
+        docx: { icon: 'description', color: 'text-blue-600' },
+        xls: { icon: 'table_chart', color: 'text-green-600' },
+        xlsx: { icon: 'table_chart', color: 'text-green-600' },
+        ppt: { icon: 'slideshow', color: 'text-orange-600' },
+        pptx: { icon: 'slideshow', color: 'text-orange-600' },
+        jpg: { icon: 'image', color: 'text-purple-600' },
+        jpeg: { icon: 'image', color: 'text-purple-600' },
+        png: { icon: 'image', color: 'text-purple-600' },
+        mp4: { icon: 'movie', color: 'text-pink-600' },
+        zip: { icon: 'folder_zip', color: 'text-yellow-600' }
+      };
+      return icons[fileType.toLowerCase()] || { icon: 'insert_drive_file', color: 'text-gray-600' };
+    }
+    
+    async function deleteResource(resourceId, storagePath) {
+      if (!confirm('Are you sure you want to delete this resource? This will remove it from all allocated students.')) return;
+      
+      // Delete from storage
+      await window.supabaseClient.storage.from('Files').remove([storagePath]);
+      
+      // Delete from database
+      const { error } = await window.supabaseClient.from('resources').delete().eq('id', resourceId);
+      
+      if (error) {
+        alert('Error deleting resource: ' + error.message);
+      } else {
+        alert('Resource deleted successfully');
+        loadResources();
+      }
+    }
+    
+    async function showAllocateModal(resourceId, resourceName) {
+      // Fetch all students
+      const { data: students } = await window.supabaseClient.from('students').select('*').order('name');
+      
+      // Get current allocations
+      const { data: resource } = await window.supabaseClient.from('resources').select('allocated_students').eq('id', resourceId).single();
+      const allocated = resource?.allocated_students || [];
+      
+      // Get unique values for filters
+      const departments = [...new Set(students.map(s => s.dept))].sort();
+      const years = [...new Set(students.map(s => s.year))].sort();
+      const sections = [...new Set(students.map(s => s.section))].sort();
+      
+      let modal = `
+        <div id="allocateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-purple-900 to-purple-700 text-white p-6">
+              <h3 class="text-2xl font-bold">Allocate Resource</h3>
+              <p class="text-purple-100 text-sm mt-1">${resourceName}</p>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1">
+              <!-- Filters -->
+              <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+                <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <span class="material-icons text-purple-600">filter_alt</span>
+                  Filter Students
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Department</label>
+                    <select id="filterDept" onchange="filterStudents()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                      <option value="">All Departments</option>
+                      ${departments.map(d => `<option value="${d}">${d}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Year</label>
+                    <select id="filterYear" onchange="filterStudents()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                      <option value="">All Years</option>
+                      ${years.map(y => `<option value="${y}">Year ${y}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Section</label>
+                    <select id="filterSection" onchange="filterStudents()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                      <option value="">All Sections</option>
+                      ${sections.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <p class="text-sm text-gray-600">
+                    Showing <span id="filteredCount" class="font-bold text-purple-600">${students.length}</span> of ${students.length} students
+                  </p>
+                  <button onclick="clearFilters()" class="text-sm text-purple-600 hover:text-purple-800 font-semibold">Clear Filters</button>
+                </div>
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="mb-4 flex flex-wrap gap-2">
+                <button onclick="selectAllStudents()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center gap-1">
+                  <span class="material-icons text-sm">check_circle</span>Select All Visible
+                </button>
+                <button onclick="deselectAllStudents()" class="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 flex items-center gap-1">
+                  <span class="material-icons text-sm">cancel</span>Deselect All
+                </button>
+                <button onclick="selectByFilter()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-1">
+                  <span class="material-icons text-sm">group_add</span>Select Filtered Only
+                </button>
+              </div>
+              
+              <!-- Students List -->
+              <div id="studentsList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                ${students.map(s => `
+                  <label class="student-item flex items-center gap-3 bg-gray-50 hover:bg-purple-50 p-4 rounded-lg cursor-pointer border-2 ${allocated.includes(s.id) ? 'border-purple-500 bg-purple-50' : 'border-gray-200'}" 
+                         data-dept="${s.dept}" data-year="${s.year}" data-section="${s.section}">
+                    <input type="checkbox" class="student-checkbox w-5 h-5" value="${s.id}" ${allocated.includes(s.id) ? 'checked' : ''}>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-gray-800 truncate">${s.name}</p>
+                      <p class="text-sm text-gray-500">${s.reg_no}</p>
+                      <p class="text-xs text-gray-400">${s.dept} | Year ${s.year} | ${s.section}</p>
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+            
+            <div class="border-t p-4 flex gap-3 bg-gray-50">
+              <div class="flex-1">
+                <p class="text-sm text-gray-600">Selected: <span id="selectedCount" class="font-bold text-purple-600">0</span> students</p>
+              </div>
+              <button onclick="closeAllocateModal()" class="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-400">Cancel</button>
+              <button onclick="saveAllocation('${resourceId}')" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 flex items-center gap-2">
+                <span class="material-icons">save</span>Save Allocation
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modal);
+      updateSelectedCount();
+      
+      // Add change listener to all checkboxes
+      document.querySelectorAll('.student-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+      });
+    }
+    
+    window.filterStudents = () => {
+      const dept = document.getElementById('filterDept').value;
+      const year = document.getElementById('filterYear').value;
+      const section = document.getElementById('filterSection').value;
+      
+      const items = document.querySelectorAll('.student-item');
+      let visibleCount = 0;
+      
+      items.forEach(item => {
+        const matchDept = !dept || item.dataset.dept === dept;
+        const matchYear = !year || item.dataset.year === year;
+        const matchSection = !section || item.dataset.section === section;
+        
+        if (matchDept && matchYear && matchSection) {
+          item.style.display = 'flex';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      document.getElementById('filteredCount').textContent = visibleCount;
+    };
+    
+    window.clearFilters = () => {
+      document.getElementById('filterDept').value = '';
+      document.getElementById('filterYear').value = '';
+      document.getElementById('filterSection').value = '';
+      filterStudents();
+    };
+    
+    window.selectAllStudents = () => {
+      document.querySelectorAll('.student-item').forEach(item => {
+        if (item.style.display !== 'none') {
+          item.querySelector('.student-checkbox').checked = true;
+        }
+      });
+      updateSelectedCount();
+    };
+    
+    window.deselectAllStudents = () => {
+      document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+      updateSelectedCount();
+    };
+    
+    window.selectByFilter = () => {
+      const dept = document.getElementById('filterDept').value;
+      const year = document.getElementById('filterYear').value;
+      const section = document.getElementById('filterSection').value;
+      
+      if (!dept && !year && !section) {
+        alert('Please select at least one filter (Department, Year, or Section)');
+        return;
+      }
+      
+      document.querySelectorAll('.student-item').forEach(item => {
+        const matchDept = !dept || item.dataset.dept === dept;
+        const matchYear = !year || item.dataset.year === year;
+        const matchSection = !section || item.dataset.section === section;
+        
+        if (matchDept && matchYear && matchSection) {
+          item.querySelector('.student-checkbox').checked = true;
+        }
+      });
+      updateSelectedCount();
+    };
+    
+    window.updateSelectedCount = () => {
+      const count = document.querySelectorAll('.student-checkbox:checked').length;
+      const countEl = document.getElementById('selectedCount');
+      if (countEl) countEl.textContent = count;
+    };
+    
+    window.closeAllocateModal = () => {
+      document.getElementById('allocateModal')?.remove();
+    };
+    
+    window.saveAllocation = async (resourceId) => {
+      const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+      
+      const { error } = await window.supabaseClient.from('resources').update({
+        allocated_students: selectedStudents
+      }).eq('id', resourceId);
+      
+      if (error) {
+        alert('Error saving allocation: ' + error.message);
+      } else {
+        alert(`Resource allocated to ${selectedStudents.length} student(s) successfully!`);
+        closeAllocateModal();
+        loadResources();
+      }
+    };
+    
+    loadResources();
+  </script>
+</body>
+</html>
