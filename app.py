@@ -3,16 +3,141 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from functools import wraps
 import os
 from datetime import timedelta
-from supabase import create_client, Client
+import requests
+
+# Supabase client wrapper: try the official Python client first; if it fails
+# (common in some serverless/vendored environments), fall back to simple
+# PostgREST HTTP calls using `requests`.
+try:
+    from supabase import create_client, Client  # type: ignore
+    _HAS_SUPABASE_PY = True
+except Exception:
+    _HAS_SUPABASE_PY = False
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here-change-in-production')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
 # Supabase configuration
-SUPABASE_URL = "https://kflhmnyikwaznzkgeini.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', "https://kflhmnyikwaznzkgeini.supabase.co")
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ")
+
+
+class _TableWrapper:
+    def __init__(self, client, table_name):
+        self._client = client
+        self._table = table_name
+        self._select = '*'
+        self._filters = []
+        self._payload = None
+        self._extra_select_params = {}
+
+    def select(self, cols='*', **kwargs):
+        self._select = cols
+        self._extra_select_params = kwargs or {}
+        return self
+
+    def eq(self, col, val):
+        self._filters.append((col, val))
+        return self
+
+    def insert(self, payload):
+        self._payload = payload
+        self._op = 'insert'
+        return self
+
+    def upsert(self, payload):
+        self._payload = payload
+        self._op = 'upsert'
+        return self
+
+    def execute(self):
+        # If we have a real supabase client, delegate
+        if _HAS_SUPABASE_PY and getattr(self._client, 'table', None):
+            try:
+                t = self._client.table(self._table)
+                if getattr(self, '_select', None):
+                    try:
+                        t = t.select(self._select, **(self._extra_select_params or {}))
+                    except Exception:
+                        t = t.select(self._select)
+                for col, val in self._filters:
+                    t = t.eq(col, val)
+                if getattr(self, '_op', None) == 'insert':
+                    t = t.insert(self._payload)
+                elif getattr(self, '_op', None) == 'upsert':
+                    t = t.upsert(self._payload)
+                return t.execute()
+            except Exception:
+                # Fall through to HTTP fallback
+                pass
+
+        # Build headers for PostgREST
+        headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type': 'application/json'
+        }
+
+        base = SUPABASE_URL.rstrip('/') + f"/rest/v1/{self._table}"
+
+        if getattr(self, '_op', None) in ('insert', 'upsert'):
+            # Use POST for insert/upsert. For upsert, request merge-duplicates.
+            prefer = 'return=representation'
+            if getattr(self, '_op', None) == 'upsert':
+                prefer = 'resolution=merge-duplicates,return=representation'
+            headers['Prefer'] = prefer
+            resp = requests.post(base, json=self._payload, headers=headers)
+            class R: pass
+            r = R()
+            try:
+                r.data = resp.json()
+            except Exception:
+                r.data = None
+            r.error = None if resp.ok else {'message': resp.text}
+            return r
+
+        # Default: select
+        params = { 'select': self._select }
+        # If client requested count via select(..., count='exact'), map to Prefer header
+        prefer_count = None
+        if self._extra_select_params and 'count' in self._extra_select_params:
+            prefer_count = f"count={self._extra_select_params['count']}"
+        for col, val in self._filters:
+            # Use PostgREST eq operator
+            params[f'{col}'] = f'eq.{val}'
+
+        if prefer_count:
+            headers['Prefer'] = prefer_count
+        resp = requests.get(base, params=params, headers=headers)
+        class R: pass
+        r = R()
+        try:
+            r.data = resp.json()
+        except Exception:
+            r.data = None
+        r.error = None if resp.ok else {'message': resp.text}
+        return r
+
+
+class SupabaseCompat:
+    def __init__(self, url, key):
+        self.url = url
+        self.key = key
+        if _HAS_SUPABASE_PY:
+            try:
+                self._client = create_client(url, key)
+            except Exception:
+                self._client = None
+        else:
+            self._client = None
+
+    def table(self, name):
+        return _TableWrapper(self._client, name)
+
+
+# Create a compat supabase object (uses env vars if present)
+supabase = SupabaseCompat(SUPABASE_URL, SUPABASE_KEY)
 
 # Authentication decorator
 def login_required(role=None):
