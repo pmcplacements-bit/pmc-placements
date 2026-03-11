@@ -573,6 +573,192 @@ def dashboard_stats():
             'submissions': 0
         }), 200
 
+@app.route('/api/exam_excel_report', methods=['GET'])
+@login_required(role='admin')
+def api_exam_excel_report():
+    try:
+        import io
+        import json as _json
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+        from flask import send_file
+
+        exam_id = request.args.get('exam_id')
+        if not exam_id:
+            return jsonify({'error': 'exam_id is required'}), 400
+
+        # Exam details
+        exam_resp = supabase.table('exams').select('*').eq('id', exam_id).execute()
+        if not exam_resp.data:
+            return jsonify({'error': 'Exam not found'}), 404
+        exam = exam_resp.data[0]
+
+        # Questions for this exam
+        q_resp = supabase.table('questions').select('id,question_text,correct_answer,type').eq('exam_id', exam_id).execute()
+        questions = q_resp.data or []
+
+        # Assigned students
+        assigned_resp = supabase.table('student_exam_map').select('student_id').eq('exam_id', exam_id).execute()
+        assigned_ids = list(dict.fromkeys([str(r['student_id']) for r in (assigned_resp.data or [])]))  # Deduplicate preserving order
+
+        # Submissions
+        subs_resp = supabase.table('submissions').select('*').eq('exam_id', exam_id).execute()
+        subs_by_student = {str(s['student_id']): s for s in (subs_resp.data or [])}
+
+        # Fallback: if no assignment mapping, use submitted student IDs
+        if not assigned_ids:
+            assigned_ids = list(subs_by_student.keys())
+
+        # Student details
+        students_map = {}
+        for sid in assigned_ids:
+            s_resp = supabase.table('students').select('*').eq('id', sid).execute()
+            if s_resp.data:
+                # Handle both list and dict responses
+                if isinstance(s_resp.data, list):
+                    students_map[sid] = s_resp.data[0]
+                else:
+                    students_map[sid] = s_resp.data
+
+        # Sort: submitted first, then by sid
+        submitted_ids = set(subs_by_student.keys())
+        sorted_ids = sorted(assigned_ids, key=lambda s: (0 if s in submitted_ids else 1, s))
+
+        # ── Build workbook ───────────────────────────────────────────────────────
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Student Report'
+
+        # Styles
+        h_blue   = PatternFill('solid', fgColor='1A3C6E')
+        h_green  = PatternFill('solid', fgColor='1E7145')
+        g_green  = PatternFill('solid', fgColor='C6EFCE')
+        g_red    = PatternFill('solid', fgColor='FFC7CE')
+        g_yellow = PatternFill('solid', fgColor='FFEB9C')
+        g_gray   = PatternFill('solid', fgColor='E0E0E0')
+        w_bold   = Font(bold=True, color='FFFFFF')
+        center   = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+        # Row 1 — Exam title banner
+        ncols = 7 + len(questions)
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max(ncols, 8))
+        tc = ws.cell(row=1, column=1, value=f"Student Report \u2014 {exam.get('title', exam_id)}")
+        tc.font = Font(bold=True, size=13, color='FFFFFF')
+        tc.fill = h_blue
+        tc.alignment = center
+        ws.row_dimensions[1].height = 24
+
+        # Row 2 — Column headers
+        static_cols = ['#', 'Student Name', 'Email', 'Department', 'Roll No', 'Score (%)', 'Status']
+        q_labels    = [f'Q{i+1}' for i in range(len(questions))]
+        all_cols    = static_cols + q_labels
+        for ci, hdr in enumerate(all_cols, start=1):
+            cell = ws.cell(row=2, column=ci, value=hdr)
+            cell.font  = w_bold
+            cell.fill  = h_blue if ci <= len(static_cols) else h_green
+            cell.alignment = center
+        ws.row_dimensions[2].height = 18
+
+        # Row 3 — Question sub-headers (short text)
+        for ci, q in enumerate(questions, start=len(static_cols) + 1):
+            txt = q['question_text']
+            cell = ws.cell(row=3, column=ci, value=(txt[:70] + '\u2026' if len(txt) > 70 else txt))
+            cell.font = Font(italic=True, size=8, color='444444')
+            cell.alignment = Alignment(horizontal='center', wrap_text=True)
+        ws.row_dimensions[3].height = 42
+
+        # Data rows (start at row 4)
+        for row_num, sid in enumerate(sorted_ids, start=4):
+            student = students_map.get(sid, {})
+            sub     = subs_by_student.get(sid)
+
+            name  = student.get('name', 'Unknown')
+            email = student.get('email', '')
+            dept  = student.get('department', student.get('dept', ''))
+            roll  = student.get('roll_no', student.get('roll_number', student.get('usn', '')))
+
+            if sub:
+                try:
+                    score_pct = round(float(sub.get('percentage', sub.get('score', 0))), 2)
+                except Exception:
+                    score_pct = 0
+                status = 'Auto-Submitted' if sub.get('auto_submitted') else 'Submitted'
+            else:
+                score_pct = None
+                status    = 'Not Submitted'
+
+            ws.cell(row=row_num, column=1, value=row_num - 3).alignment = center
+            ws.cell(row=row_num, column=2, value=name)
+            ws.cell(row=row_num, column=3, value=email)
+            ws.cell(row=row_num, column=4, value=dept)
+            ws.cell(row=row_num, column=5, value=roll)
+
+            sc = ws.cell(row=row_num, column=6, value=score_pct if score_pct is not None else 'N/A')
+            sc.alignment = center
+            if score_pct is not None:
+                sc.fill = g_green if score_pct >= 60 else g_red
+
+            stc = ws.cell(row=row_num, column=7, value=status)
+            stc.alignment = center
+            stc.fill = (g_green if status == 'Submitted'
+                        else g_yellow if status == 'Auto-Submitted'
+                        else g_gray)
+
+            # Per-question columns
+            answers = {}
+            if sub and sub.get('answers'):
+                try:
+                    a = sub['answers']
+                    answers = a if isinstance(a, dict) else _json.loads(a)
+                except Exception:
+                    answers = {}
+
+            for qi, q in enumerate(questions):
+                col = len(static_cols) + qi + 1
+                qid = str(q['id'])
+                s_ans = answers.get(qid, answers.get(q['id']))
+                c_ans = q.get('correct_answer', '')
+
+                if sub is None:
+                    val, fill = 'N/A', g_gray
+                elif s_ans is None:
+                    val, fill = 'Not Answered', g_gray
+                elif str(s_ans).strip().upper() == str(c_ans).strip().upper():
+                    val, fill = 'Correct', g_green
+                else:
+                    val, fill = 'Wrong', g_red
+
+                cell = ws.cell(row=row_num, column=col, value=val)
+                cell.fill = fill
+                cell.alignment = center
+
+        # Column widths
+        col_widths = [4, 22, 28, 16, 14, 10, 14] + [12] * len(questions)
+        for ci, w in enumerate(col_widths, start=1):
+            ws.column_dimensions[get_column_letter(ci)].width = w
+
+        ws.freeze_panes = 'A4'
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        safe_title = exam.get('title', 'exam').replace(' ', '_')[:50]
+        filename = f"{safe_title}_student_report.xlsx"
+        return send_file(
+            buf,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     import os
     debug_env = os.environ.get('FLASK_DEBUG', 'False').lower() in ('1', 'true', 'yes')
