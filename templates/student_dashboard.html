@@ -33,12 +33,12 @@
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-3">
-          <div class="bg-white bg-opacity-20 rounded-lg p-2">
-            <span class="material-icons text-3xl">school</span>
+          <div class="bg-white bg-opacity-20 rounded-lg p-2 flex items-center justify-center">
+            <img src="{{ url_for('media_file', filename='logo-icon.png') }}" alt="Logo Icon" class="w-8 h-8 object-contain" />
           </div>
           <div>
-            <h1 class="font-bold text-xl">Training & Placement Cell</h1>
-            <p class="text-xs text-blue-100">Student Portal</p>
+            <img src="{{ url_for('media_file', filename='logo-text.png') }}" alt="Campus Test" class="h-5 md:h-6 object-contain" />
+            <p class="text-xs text-blue-100">Training & Placement Cell | Student Portal</p>
           </div>
         </div>
         <div class="hidden md:flex items-center gap-4">
