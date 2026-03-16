@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Campus Test - Institution Login</title>
+<!-- Tailwind CSS v3 CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style data-purpose="custom-styles">
+    /* Custom font-family to match the clean sans-serif in the image */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Blue gradient for the logo background and login button */
+    .bg-campus-blue {
+      background: linear-gradient(135deg, #1d4ed8 0%, #0c2b8a 100%);
+    }
+
+    .btn-gradient {
+      background: linear-gradient(to bottom, #1d4ed8 0%, #0c2b8a 100%);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Card Shadow - making it soft and spread like in the screenshot */
+    .login-card-shadow {
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Header styles to match the reference image */
+    .header-pre{
+      font-size:16px;
+      color:#6b7280;
+      font-weight:600;
+      margin-bottom:10px;
+      letter-spacing:0.4px;
+    }
+
+    .header-title{
+      font-size:36px;
+      line-height:1.04;
+      font-weight:800;
+      color:#0f1724;
+      margin:0 0 18px 0;
+    }
+
+    @media(min-width:768px){
+      .header-title{font-size:36px}
+    }
+
+    /* Brand logo responsive sizing */
+    .brand-logo{
+      width: clamp(260px, 52vw, 680px);
+      max-width:96%;
+      height:auto;
+      display:block;
+    }
+
+    @media (max-width:640px){
+      .brand-logo{ width: clamp(180px, 60vw, 420px) }
+      .bg-campus-blue { padding: 2rem 1rem }
+      .login-card-shadow { padding: 1.25rem }
+    }
+  </style>
+</head>
+<body class="bg-white">
+<!-- BEGIN: MainContainer -->
+<main class="flex min-h-screen flex-col md:flex-row" data-purpose="split-screen-layout">
+<!-- BEGIN: LeftBrandSection -->
+<section class="w-full md:w-1/2 bg-campus-blue flex flex-col items-center justify-center p-8 min-h-[40vh] md:min-h-screen" data-purpose="branding-side">
+<div class="flex flex-col items-center space-y-4">
+<!-- Main Logo Graphic (responsive reduced size) -->
+<img alt="Campus Test logo" class="brand-logo object-contain" data-purpose="brand-logo" src="img\campus test.png"/>
+</section>
+<!-- END: LeftBrandSection -->
+<!-- BEGIN: RightLoginSection -->
+<section class="w-full md:w-1/2 flex items-center justify-center bg-[#F8FAFC] p-6 md:p-12" data-purpose="login-side">
+<!-- BEGIN: LoginCard -->
+<div class="bg-white w-full max-w-lg p-10 md:p-16 rounded-[40px] login-card-shadow flex flex-col items-start" data-purpose="form-container">
+  <div class="w-full mb-6">
+    <div class="header-pre">HELLO !</div>
+    <h1 class="header-title">WELCOME TO<br> CAMPUS TEST</h1>
+  </div>
+<form class="w-full space-y-6" onsubmit="event.preventDefault();">
+<!-- Email Input -->
+<div class="relative group" data-purpose="email-field">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<!-- Simple Mail Icon (SVG) -->
+<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<input class="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-full text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder-gray-400" placeholder="Email address" type="email"/>
+</div>
+<!-- Password Input -->
+<div class="relative group" data-purpose="password-field">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<!-- Lock Icon (SVG) -->
+<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<input class="block w-full pl-12 pr-12 py-4 border border-gray-300 rounded-full text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder-gray-400" placeholder="Password" type="password"/>
+<div class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer">
+<!-- Eye Hide Icon (SVG) -->
+<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<!-- Login Button -->
+<div class="pt-6" data-purpose="form-actions">
+<button class="w-full py-4 rounded-full text-white font-bold text-xl btn-gradient hover:opacity-90 transition-opacity active:scale-[0.98]" type="submit">
+              LOGIN
+            </button>
+</div>
+<!-- Forgot Password Link -->
+<div class="text-center pt-4">
+<a class="text-gray-400 text-lg hover:text-blue-600 transition-colors" data-purpose="forgot-password-link" href="#">
+              Forget Password ?
+            </a>
+</div>
+</form>
+</div>
+<!-- END: LoginCard -->
+</section>
+<!-- END: RightLoginSection -->
+</main>
+<!-- END: MainContainer -->
+</body></html>

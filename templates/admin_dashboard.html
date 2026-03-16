@@ -254,6 +254,24 @@
           </div>
         </a>
 
+        <!-- User Management Card -->
+        <a href="{{ url_for('user_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-emerald-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-emerald-100 rounded-xl p-4 group-hover:bg-emerald-200 transition">
+                <span class="material-icons text-emerald-600 text-4xl">manage_accounts</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-emerald-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">User Management</h4>
+            <p class="text-gray-600 text-sm">Create and manage admin accounts for portal access</p>
+            <div class="mt-4 flex items-center gap-2 text-emerald-600 font-semibold text-sm">
+              <span>Manage Users</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
         <!-- Events Management Card -->
         <a href="{{ url_for('events_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-pink-500">
           <div class="p-6">

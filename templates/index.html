@@ -3,210 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Placement Cell Exam Portal</title>
+  <title>Placement Cell Login</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
-    /* Loading Animation */
-    #loadingScreen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      transition: opacity 0.5s ease-out;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    body { font-family: 'Inter', sans-serif; }
+
+    .brand-panel {
+      background: linear-gradient(135deg, #1d4ed8 0%, #0b2c80 100%);
     }
-    
-    #loadingScreen.fade-out {
-      opacity: 0;
-      pointer-events: none;
+
+    .card-shadow {
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
     }
-    
-    .loader {
-      width: 80px;
-      height: 80px;
-      border: 8px solid rgba(255, 255, 255, 0.3);
-      border-top: 8px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+
+    .pill-btn {
+      border-radius: 9999px;
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
     }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+
+    .pill-btn.active {
+      background: linear-gradient(180deg, #1d4ed8 0%, #0b2c80 100%);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(29, 78, 216, 0.35);
     }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+
+    .pill-btn:not(.active) {
+      background: #eef2ff;
+      color: #1f2937;
     }
-    
-    .fade-in-content {
-      animation: fadeIn 0.8s ease-out forwards;
+
+    .submit-btn {
+      background: linear-gradient(180deg, #1d4ed8 0%, #0b2c80 100%);
     }
-    
-    /* Pulse animation for cards */
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
+
+    .portal-panel {
+      display: none;
+    }
+
+    .portal-panel.active {
+      display: block;
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 min-h-screen flex items-center justify-center p-4 py-8">
-  <!-- Loading Screen -->
-  <div id="loadingScreen">
-    <div class="loader mb-6"></div>
-    <p class="text-white text-xl font-semibold">Loading Portal...</p>
-  </div>
+<body class="bg-white">
+  <main class="min-h-screen flex flex-col md:flex-row">
+    <section class="w-full md:w-1/2 brand-panel text-white flex flex-col justify-center p-8 md:p-12">
+      <style>
+        /* Index spacing and logo sizing tweaks */
+        .index-letter-space { letter-spacing: 0.06em; }
+        /* Increase vertical rhythm between sections */
+        .index-gap > * { margin-bottom: 2.25rem; }
 
-  <!-- Main Content -->
-  <div id="mainContent" class="opacity-0">
-    <!-- Background Decorations -->
-    <div class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-      <div class="absolute top-10 left-10 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      <div class="absolute bottom-10 right-10 w-64 h-64 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
-      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style="animation-delay: 4s;"></div>
-    </div>
+        /* Improve readability for headings and paragraphs */
+        .index-content h1, .index-content h2 { line-height: 1.15; margin-top: 0; margin-bottom: 0.85rem; }
+        .index-content p { line-height: 1.8; margin-bottom: 1rem; }
 
-    <!-- Main Card -->
-    <div class="relative bg-white shadow-2xl rounded-2xl p-6 md:p-8 w-full max-w-xl text-center transform transition-all hover:scale-[1.02]">
-      <!-- Header with Icon -->
-      <div class="mb-6">
-        <div class="inline-block bg-gradient-to-br from-blue-500 to-purple-600 rounded-full p-4 mb-3 shadow-lg">
-          <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-          </svg>
-        </div>
-        <h1 class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text"><a href="https://www.zeonytechnologies.com" target="_blank" rel="noopener noreferrer">Training & Placement Cell</a></h1>
-        <h2 class="text-xl font-bold text-gray-700 mb-1">Examination Portal</h2>
-        <p class="text-gray-500 text-base">Secure & Efficient Online Assessment System</p>
+        /* Logo: larger and nudged upward for balance */
+        #logo-img { display:block; margin:0 auto 0.5rem; width:28rem; max-width:92%; transform: translateY(-6%) scale(1.45); transform-origin:center; }
+
+        @media (max-width: 1024px) {
+          #logo-img { width:30rem; transform: translateY(-4%) scale(1.35); }
+        }
+        @media (max-width: 768px) {
+          #logo-img { width:22rem; transform: translateY(-2%) scale(1.2); }
+          .index-letter-space { letter-spacing: 0.04em; }
+        }
+      </style>
+      <div class="flex items-center justify-center my-0 index-gap index-letter-space">
+        <img id="logo-img" src="{{ url_for('media_file', filename='campus test.png') }}" alt="Campus Test Logo" class="object-contain" />
+      </div>
+      <div class="mt-2">
+        <p class="uppercase tracking-widest text-blue-100 text-sm font-semibold mb-3">Training & Placement Cell</p>
+        <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">Examination<br>Portal</h1>
+        <p class="mt-4 text-blue-100 text-base md:text-lg max-w-xl">Secure and efficient online assessment system for students and institution administrators.</p>
       </div>
 
-      <!-- Description -->
-      <div class="mb-6 px-4">
-        <p class="text-gray-600 text-base leading-relaxed">Welcome to the integrated examination platform. Select your portal to access assessments, manage exams, and track progress.</p>
-      </div>
+      
 
-      <!-- Login Options -->
-      <div class="space-y-4 max-w-md mx-auto">
-        <!-- Student Login Card -->
-        <div class="group relative">
-          <div class="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur opacity-25 group-hover:opacity-40 transition"></div>
-          <button data-url="{{ url_for('student_login') }}" 
-                  class="nav-button relative w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 px-5 rounded-lg text-base font-bold hover:from-green-600 hover:to-emerald-700 transform transition hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-3 group">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-            <span>Student Portal</span>
-            <svg class="w-5 h-5 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
+      <div class="grid grid-cols-1 my-6 sm:grid-cols-3 gap-3 text-sm">
+        <div class="bg-white bg-opacity-10 rounded-xl p-3">
+          <p class="font-bold">Secure</p>
+          <p class="text-blue-100">Protected exam access</p>
         </div>
-
-        <!-- Admin Login Card -->
-        <div class="group relative">
-          <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl blur opacity-25 group-hover:opacity-40 transition"></div>
-          <button data-url="{{ url_for('admin_login') }}" 
-                  class="nav-button relative w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 px-5 rounded-lg text-base font-bold hover:from-blue-600 hover:to-indigo-700 transform transition hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-3 group">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-            </svg>
-            <span>Institution Portal</span>
-            <svg class="w-5 h-5 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
+        <div class="bg-white bg-opacity-10 rounded-xl p-3">
+          <p class="font-bold">Fast</p>
+          <p class="text-blue-100">Real-time processing</p>
+        </div>
+        <div class="bg-white bg-opacity-10 rounded-xl p-3">
+          <p class="font-bold">Analytics</p>
+          <p class="text-blue-100">Performance insights</p>
         </div>
       </div>
+    </section>
 
-      <!-- Features -->
-      <div class="mt-6 pt-6 border-t border-gray-200">
-        <div class="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-          <div class="space-y-1">
-            <div class="inline-block bg-blue-100 rounded-full p-2">
-              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-              </svg>
-            </div>
-            <h3 class="font-semibold text-gray-700">Secure</h3>
-            <p class="text-sm text-gray-500">End-to-end encryption</p>
+    <section class="w-full md:w-1/2 bg-gray-50 flex items-center justify-center p-6 md:p-12">
+      <div class="bg-white w-full max-w-xl rounded-3xl p-6 md:p-10 card-shadow">
+        <p class="text-gray-500 text-sm font-semibold tracking-wide mb-2">HELLO!</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight">Welcome to Campus Test</h2>
+
+        <div class="grid grid-cols-2 gap-3 mt-6 bg-gray-100 p-2 rounded-full">
+          <button id="studentTab" class="pill-btn" type="button">Student Login</button>
+          <button id="adminTab" class="pill-btn" type="button">Institute Login</button>
+        </div>
+
+        <div id="studentPanel" class="portal-panel mt-6">
+          {% if request.args.get('reset') == 'success' and (active_role or 'student') == 'student' %}
+          <div class="mb-4 bg-green-50 border-l-4 border-green-500 p-3 rounded">
+            <span class="text-green-700 font-semibold text-sm">Password reset successful. Please sign in with your new password.</span>
           </div>
-          <div class="space-y-2">
-            <div class="inline-block bg-green-100 rounded-full p-3">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-            <h3 class="font-semibold text-gray-700">Fast</h3>
-            <p class="text-sm text-gray-500">Real-time processing</p>
+          {% endif %}
+          {% if student_error %}
+          <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
+            <span class="text-red-700 font-semibold text-sm">{{ student_error }}</span>
           </div>
-          <div class="space-y-2">
-            <div class="inline-block bg-purple-100 rounded-full p-3">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
+          {% endif %}
+
+          <form method="POST" action="{{ url_for('student_login') }}" class="space-y-4">
+            <input type="hidden" name="source" value="index">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+              <input type="email" name="email" required placeholder="student@example.com" class="w-full border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <h3 class="font-semibold text-gray-700">Analytics</h3>
-            <p class="text-sm text-gray-500">Detailed insights</p>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+              <input type="password" name="password" required placeholder="Enter password" class="w-full border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="text-right">
+              <a href="{{ url_for('forgot_password', role='student') }}" class="text-sm text-blue-700 hover:text-blue-900 font-semibold">Forgot password?</a>
+            </div>
+            <button type="submit" class="w-full submit-btn text-white py-3 rounded-full font-bold text-lg hover:opacity-95">Sign In as Student</button>
+          </form>
+        </div>
+
+        <div id="adminPanel" class="portal-panel mt-6">
+          {% if request.args.get('reset') == 'success' and (active_role or 'student') == 'admin' %}
+          <div class="mb-4 bg-green-50 border-l-4 border-green-500 p-3 rounded">
+            <span class="text-green-700 font-semibold text-sm">Password reset successful. Please sign in with your new password.</span>
           </div>
+          {% endif %}
+          {% if admin_error %}
+          <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
+            <span class="text-red-700 font-semibold text-sm">{{ admin_error }}</span>
+          </div>
+          {% endif %}
+
+          <form method="POST" action="{{ url_for('admin_login') }}" class="space-y-4">
+            <input type="hidden" name="source" value="index">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+              <input type="email" name="email" required placeholder="admin@example.com" class="w-full border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+              <input type="password" name="password" required placeholder="Enter password" class="w-full border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="text-right">
+              <a href="{{ url_for('forgot_password', role='admin') }}" class="text-sm text-blue-700 hover:text-blue-900 font-semibold">Forgot password?</a>
+            </div>
+            <button type="submit" class="w-full submit-btn text-white py-3 rounded-full font-bold text-lg hover:opacity-95">Sign In as Institute</button>
+          </form>
+        </div>
+
+        <div class="mt-7 pt-5 border-t border-gray-200 text-center text-sm text-gray-500">
+          <p>© 2025 <a href="https://www.zeonytechnologies.com" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-900">Zeony Technologies</a>. All rights reserved.</p>
         </div>
       </div>
-
-      <!-- Footer -->
-      <div class="mt-6 text-xs text-gray-400">
-        <p>&copy; 2025 <a href="https://www.zeonytechnologies.com" target="_blank" rel="noopener noreferrer">Zeony Technologies</a>. All rights reserved.</p>
-      </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <script>
-    // Loading animation control
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        const loadingScreen = document.getElementById('loadingScreen');
-        const mainContent = document.getElementById('mainContent');
-        
-        loadingScreen.classList.add('fade-out');
-        mainContent.classList.remove('opacity-0');
-        mainContent.classList.add('fade-in-content');
-        
-        setTimeout(function() {
-          loadingScreen.style.display = 'none';
-        }, 500);
-      }, 1000);
-    });
+    function setActivePortal(role) {
+      const studentTab = document.getElementById('studentTab');
+      const adminTab = document.getElementById('adminTab');
+      const studentPanel = document.getElementById('studentPanel');
+      const adminPanel = document.getElementById('adminPanel');
 
-    // Navigate with loading effect
-    function navigateWithLoading(url) {
-      const mainContent = document.getElementById('mainContent');
-      const loadingScreen = document.getElementById('loadingScreen');
-      
-      mainContent.style.opacity = '0';
-      loadingScreen.style.display = 'flex';
-      loadingScreen.classList.remove('fade-out');
-      
-      setTimeout(function() {
-        window.location.href = url;
-      }, 500);
+      if (role === 'admin') {
+        adminTab.classList.add('active');
+        studentTab.classList.remove('active');
+        adminPanel.classList.add('active');
+        studentPanel.classList.remove('active');
+      } else {
+        studentTab.classList.add('active');
+        adminTab.classList.remove('active');
+        studentPanel.classList.add('active');
+        adminPanel.classList.remove('active');
+      }
     }
 
-    // Add click handlers to navigation buttons
-    document.addEventListener('DOMContentLoaded', function() {
-      const navButtons = document.querySelectorAll('.nav-button');
-      navButtons.forEach(function(button) {
-        button.addEventListener('click', function() {
-          const url = this.getAttribute('data-url');
-          navigateWithLoading(url);
-        });
-      });
+    document.getElementById('studentTab').addEventListener('click', function() {
+      setActivePortal('student');
     });
+
+    document.getElementById('adminTab').addEventListener('click', function() {
+      setActivePortal('admin');
+    });
+
+    setActivePortal('{{ active_role or "student" }}');
   </script>
 </body>
 </html>

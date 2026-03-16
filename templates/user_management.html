@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management | Placement Cell</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .hover-lift { transition: all 0.25s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12); }
+    .table-row:hover { background: linear-gradient(to right, #eff6ff, #e0f2fe); }
+    .theme-bg { background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 45%, #e8f0ff 100%); }
+    .primary-card { background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%); color: #ffffff; }
+    .primary-btn { background: #2563eb; color: #ffffff; }
+    .primary-btn:hover { background: #1d4ed8; }
+    .primary-soft { background: #dbeafe; color: #1d4ed8; }
+    .primary-soft:hover { background: #bfdbfe; }
+    .primary-text { color: #2563eb; }
+    .admin-table-head { background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%); color: #ffffff; }
+    .admin-role-badge { background: #dbeafe; color: #1d4ed8; }
+  </style>
+</head>
+<body class="theme-bg min-h-screen">
+  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-6 py-4 shadow-xl">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-white bg-opacity-20 rounded-lg p-2">
+          <span class="material-icons text-3xl">manage_accounts</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-xl">Placement Cell Admin</h1>
+          <p class="text-xs text-blue-100">User Management</p>
+        </div>
+      </div>
+      <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-700 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 font-semibold shadow-lg">
+        <span class="material-icons">dashboard</span>
+        <span>Dashboard</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto py-8 px-4">
+    <div class="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-4xl font-bold text-gray-800 flex items-center gap-3">
+          <span class="material-icons text-5xl primary-text">admin_panel_settings</span>
+          Admin User Management
+        </h2>
+        <p class="text-gray-600 mt-2">Create and manage admin login users. Only admin role is used in this system.</p>
+      </div>
+      <div id="adminCount" class="primary-card px-8 py-4 rounded-xl shadow-lg">
+        <p class="text-sm opacity-90">Total Admin Users</p>
+        <p class="text-4xl font-bold">0</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-1 bg-white rounded-2xl shadow-xl p-6 hover-lift">
+        <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800">
+          <span class="material-icons text-3xl mr-2 primary-text">person_add</span>
+          Add Admin
+        </h3>
+        <form id="addAdminForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2 text-gray-700">Name</label>
+            <input id="adminName" type="text" required maxlength="80" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Admin name">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2 text-gray-700">Email</label>
+            <input id="adminEmail" type="email" required maxlength="120" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="admin@example.com">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2 text-gray-700">Password</label>
+            <input id="adminPassword" type="password" required minlength="4" maxlength="120" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter password">
+            <p class="text-xs text-gray-500 mt-1">Stored in users table to match existing login flow.</p>
+          </div>
+          <button id="addAdminBtn" type="submit" class="w-full primary-btn py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
+            <span class="material-icons text-sm">add</span>
+            Create Admin
+          </button>
+        </form>
+        <div id="formMsg" class="mt-3 text-sm"></div>
+      </div>
+
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6 hover-lift">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold flex items-center gap-2 text-gray-800">
+            <span class="material-icons text-2xl primary-text">groups</span>
+            Existing Admin Users
+          </h3>
+          <button id="refreshAdmins" class="primary-soft px-4 py-2 rounded-lg font-semibold flex items-center gap-2">
+            <span class="material-icons text-sm">refresh</span>
+            Refresh
+          </button>
+        </div>
+        <div id="usersList" class="overflow-x-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from '/static/js/database.js';
+
+    const currentEmail = "{{ current_email }}";
+
+    function escapeHtml(value) {
+      const div = document.createElement('div');
+      div.textContent = value ?? '';
+      return div.innerHTML;
+    }
+
+    function setFormMessage(message, isError = false) {
+      const el = document.getElementById('formMsg');
+      el.className = isError
+        ? 'mt-3 text-sm bg-red-100 border border-red-300 text-red-700 px-3 py-2 rounded-lg'
+        : 'mt-3 text-sm bg-blue-100 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg';
+      el.textContent = message;
+    }
+
+    async function loadAdmins() {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id,name,email,role')
+        .eq('role', 'admin');
+
+      if (error) {
+        document.getElementById('usersList').innerHTML = `<div class="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+
+      const admins = data || [];
+      document.getElementById('adminCount').innerHTML = `<p class="text-sm opacity-90">Total Admin Users</p><p class="text-4xl font-bold">${admins.length}</p>`;
+
+      if (!admins.length) {
+        document.getElementById('usersList').innerHTML = '<div class="text-center py-10"><span class="material-icons text-6xl text-gray-300">person_off</span><p class="text-gray-500 mt-2">No admin users found.</p></div>';
+        return;
+      }
+
+      let html = '';
+      html += '<div class="overflow-x-auto rounded-xl border-2 border-gray-200">';
+      html += '<table class="w-full text-sm">';
+      html += '<thead><tr class="admin-table-head">';
+      html += '<th class="p-4 text-left font-bold">Name</th>';
+      html += '<th class="p-4 text-left font-bold">Email</th>';
+      html += '<th class="p-4 text-center font-bold">Role</th>';
+      html += '<th class="p-4 text-center font-bold">Actions</th>';
+      html += '</tr></thead><tbody>';
+
+      for (const admin of admins) {
+        const isCurrent = (admin.email || '').toLowerCase() === (currentEmail || '').toLowerCase();
+        html += `<tr class="border-b table-row">`;
+        html += `<td class="p-4 font-semibold text-gray-800">${escapeHtml(admin.name || '-')}</td>`;
+        html += `<td class="p-4 text-gray-700">${escapeHtml(admin.email || '-')}</td>`;
+        html += '<td class="p-4 text-center"><span class="admin-role-badge px-3 py-1 rounded-full text-xs font-bold">admin</span></td>';
+
+        if (isCurrent) {
+          html += '<td class="p-4 text-center"><span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">Current Session</span></td>';
+        } else {
+          html += `<td class="p-4 text-center"><button data-id="${admin.id}" data-email="${escapeHtml(admin.email || '')}" class="delete-admin bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 font-semibold text-xs inline-flex items-center gap-1"><span class="material-icons text-sm">delete</span>Delete</button></td>`;
+        }
+
+        html += '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      document.getElementById('usersList').innerHTML = html;
+    }
+
+    document.getElementById('addAdminForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('addAdminBtn');
+      const old = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-icons text-sm animate-spin">refresh</span>Creating...';
+
+      const name = document.getElementById('adminName').value.trim();
+      const email = document.getElementById('adminEmail').value.trim().toLowerCase();
+      const password = document.getElementById('adminPassword').value;
+
+      try {
+        const { error } = await supabase.from('users').insert({
+          name,
+          email,
+          password,
+          role: 'admin'
+        });
+
+        if (error) {
+          setFormMessage(error.message, true);
+          return;
+        }
+
+        setFormMessage('Admin user created successfully.');
+        document.getElementById('addAdminForm').reset();
+        await loadAdmins();
+      } catch (err) {
+        setFormMessage(err.message || 'Failed to create admin user.', true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    });
+
+    document.getElementById('usersList').addEventListener('click', async (e) => {
+      const button = e.target.closest('.delete-admin');
+      if (!button) return;
+
+      const userId = button.dataset.id;
+      const userEmail = button.dataset.email || '';
+      const ok = confirm(`Delete admin user ${userEmail}?`);
+      if (!ok) return;
+
+      const old = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = '<span class="material-icons text-sm animate-spin">refresh</span>Deleting';
+
+      try {
+        const { error } = await supabase.from('users').delete().eq('id', userId);
+        if (error) {
+          alert('Delete failed: ' + error.message);
+          return;
+        }
+        await loadAdmins();
+      } catch (err) {
+        alert('Delete failed: ' + (err.message || 'Unknown error'));
+      } finally {
+        button.disabled = false;
+        button.innerHTML = old;
+      }
+    });
+
+    document.getElementById('refreshAdmins').addEventListener('click', loadAdmins);
+    loadAdmins();
+  </script>
+</body>
+</html>

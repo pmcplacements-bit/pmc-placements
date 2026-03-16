@@ -50,7 +50,16 @@
           </div>
           <input type="password" name="password" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" placeholder="••••••••" required>
         </div>
+        <div class="mt-2 text-right">
+          <a href="{{ url_for('forgot_password', role='student') }}" class="text-sm text-green-600 hover:text-green-800 font-semibold">Forgot password?</a>
+        </div>
       </div>
+
+      {% if request.args.get('reset') == 'success' %}
+      <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+        <span class="text-green-700 font-semibold">Password reset successful. Please sign in with your new password.</span>
+      </div>
+      {% endif %}
 
       {% if error %}
       <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">

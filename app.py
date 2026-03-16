@@ -1,9 +1,14 @@
 # Flask Web Application for Placement Cell Online Test Platform
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from functools import wraps
 import os
 from datetime import timedelta
 import requests
+import hashlib
+import secrets
+import smtplib
+import time
+from email.message import EmailMessage
 
 # Supabase client wrapper: try the official Python client first; if it fails
 # (common in some serverless/vendored environments), fall back to simple
@@ -21,6 +26,11 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 # Supabase configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL', "https://kflhmnyikwaznzkgeini.supabase.co")
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ")
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+SMTP_EMAIL = os.environ.get('SMTP_EMAIL', 'pmcplacements@gmail.com')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', 'xovepwitamhpmiac')
+OTP_EXPIRY_MINUTES = int(os.environ.get('OTP_EXPIRY_MINUTES', '10'))
 
 
 class _TableWrapper:
@@ -152,16 +162,91 @@ def login_required(role=None):
         return decorated_function
     return decorator
 
+
+def _first_record(data):
+    if isinstance(data, list):
+        return data[0] if data else None
+    if isinstance(data, dict):
+        return data
+    return None
+
+
+def _find_account_by_email(role, email):
+    email = (email or '').strip().lower()
+    if role == 'admin':
+        resp = supabase.table('users').select('*').eq('email', email).eq('role', 'admin').execute()
+        return _first_record(resp.data), 'users'
+    if role == 'student':
+        resp = supabase.table('students').select('*').eq('email', email).execute()
+        return _first_record(resp.data), 'students'
+    return None, None
+
+
+def _send_reset_otp_email(recipient_email, recipient_name, otp_code, role):
+    msg = EmailMessage()
+    msg['Subject'] = f"Placement Cell {role.title()} Password Reset OTP"
+    msg['From'] = SMTP_EMAIL
+    msg['To'] = recipient_email
+    msg.set_content(
+        f"""
+Hello {recipient_name or 'User'},
+
+We received a request to reset your {role} account password.
+
+Your OTP is: {otp_code}
+This OTP expires in {OTP_EXPIRY_MINUTES} minutes.
+
+If you did not request this reset, please ignore this email.
+
+Regards,
+Placement Cell Team
+""".strip()
+    )
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.send_message(msg)
+
+
+def _update_password_by_email(role, email, new_password):
+    table = 'users' if role == 'admin' else 'students'
+    headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+    }
+
+    params = {'email': f'eq.{email.strip().lower()}'}
+    if role == 'admin':
+        params['role'] = 'eq.admin'
+
+    url = SUPABASE_URL.rstrip('/') + f"/rest/v1/{table}"
+    resp = requests.patch(url, params=params, json={'password': new_password}, headers=headers)
+    if not resp.ok:
+        return {'ok': False, 'message': resp.text}
+    return {'ok': True}
+
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    active_role = (request.args.get('role') or 'student').strip().lower()
+    if active_role not in ('student', 'admin'):
+        active_role = 'student'
+    return render_template('index.html', active_role=active_role)
+
+
+@app.route('/media/<path:filename>')
+def media_file(filename):
+    return send_from_directory(os.path.join(app.root_path, 'media'), filename)
 
 @app.route('/student_login', methods=['GET', 'POST'])
 def student_login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        source = (request.form.get('source') or '').strip().lower()
         
         try:
             response = supabase.table('students').select('*').eq('email', email).eq('password', password).execute()
@@ -174,8 +259,12 @@ def student_login():
                 session.permanent = True
                 return redirect(url_for('student_dashboard'))
             else:
+                if source == 'index':
+                    return render_template('index.html', active_role='student', student_error='Invalid credentials')
                 return render_template('student_login.html', error='Invalid credentials')
         except Exception as e:
+            if source == 'index':
+                return render_template('index.html', active_role='student', student_error=str(e))
             return render_template('student_login.html', error=str(e))
     
     return render_template('student_login.html')
@@ -185,6 +274,7 @@ def admin_login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        source = (request.form.get('source') or '').strip().lower()
         
         try:
             response = supabase.table('users').select('*').eq('email', email).eq('password', password).eq('role', 'admin').execute()
@@ -197,11 +287,99 @@ def admin_login():
                 session.permanent = True
                 return redirect(url_for('admin_dashboard'))
             else:
+                if source == 'index':
+                    return render_template('index.html', active_role='admin', admin_error='Invalid credentials')
                 return render_template('admin_login.html', error='Invalid credentials')
         except Exception as e:
+            if source == 'index':
+                return render_template('index.html', active_role='admin', admin_error=str(e))
             return render_template('admin_login.html', error=str(e))
     
     return render_template('admin_login.html')
+
+
+@app.route('/forgot_password/<role>', methods=['GET', 'POST'])
+def forgot_password(role):
+    role = (role or '').strip().lower()
+    if role not in ('admin', 'student'):
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip().lower()
+        account, _table = _find_account_by_email(role, email)
+
+        if not account:
+            return render_template('forgot_password.html', role=role, error='Email not found for this account type.')
+
+        otp_code = f"{secrets.randbelow(1000000):06d}"
+        otp_hash = hashlib.sha256(otp_code.encode('utf-8')).hexdigest()
+        expires_at = int(time.time()) + (OTP_EXPIRY_MINUTES * 60)
+
+        session['password_reset'] = {
+            'role': role,
+            'email': email,
+            'otp_hash': otp_hash,
+            'expires_at': expires_at
+        }
+
+        try:
+            _send_reset_otp_email(email, account.get('name', 'User'), otp_code, role)
+        except Exception as e:
+            return render_template('forgot_password.html', role=role, error=f'Failed to send OTP email: {e}')
+
+        return redirect(url_for('reset_password', role=role))
+
+    return render_template('forgot_password.html', role=role)
+
+
+@app.route('/reset_password/<role>', methods=['GET', 'POST'])
+def reset_password(role):
+    role = (role or '').strip().lower()
+    if role not in ('admin', 'student'):
+        return redirect(url_for('index'))
+
+    reset_ctx = session.get('password_reset') or {}
+    if not reset_ctx or reset_ctx.get('role') != role:
+        return redirect(url_for('forgot_password', role=role))
+
+    if request.method == 'POST':
+        otp = (request.form.get('otp') or '').strip()
+        new_password = (request.form.get('new_password') or '').strip()
+        confirm_password = (request.form.get('confirm_password') or '').strip()
+
+        if len(otp) != 6 or not otp.isdigit():
+            return render_template('reset_password.html', role=role, error='Enter a valid 6-digit OTP.')
+
+        if len(new_password) < 4:
+            return render_template('reset_password.html', role=role, error='Password must be at least 4 characters.')
+
+        if new_password != confirm_password:
+            return render_template('reset_password.html', role=role, error='Passwords do not match.')
+
+        if int(time.time()) > int(reset_ctx.get('expires_at', 0)):
+            session.pop('password_reset', None)
+            return render_template('forgot_password.html', role=role, error='OTP expired. Request a new OTP.')
+
+        incoming_hash = hashlib.sha256(otp.encode('utf-8')).hexdigest()
+        if incoming_hash != reset_ctx.get('otp_hash'):
+            return render_template('reset_password.html', role=role, error='Invalid OTP.')
+
+        email = reset_ctx.get('email', '').strip().lower()
+        account, _table = _find_account_by_email(role, email)
+        if not account:
+            session.pop('password_reset', None)
+            return render_template('forgot_password.html', role=role, error='Account no longer exists. Contact administrator.')
+
+        update_result = _update_password_by_email(role, email, new_password)
+        if not update_result.get('ok'):
+            return render_template('reset_password.html', role=role, error=f"Unable to update password: {update_result.get('message')}")
+
+        session.pop('password_reset', None)
+        if role == 'admin':
+            return redirect(url_for('index', role='admin', reset='success'))
+        return redirect(url_for('index', role='student', reset='success'))
+
+    return render_template('reset_password.html', role=role)
 
 @app.route('/logout')
 def logout():
@@ -233,6 +411,11 @@ def exam_fullscreen():
 @login_required(role='admin')
 def student_management():
     return render_template('student_management.html')
+
+@app.route('/user_management')
+@login_required(role='admin')
+def user_management():
+    return render_template('user_management.html', current_email=session.get('email', ''))
 
 @app.route('/events_management')
 @login_required(role='admin')

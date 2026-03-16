@@ -6,7 +6,9 @@
   <title>Student Dashboard | Training & Placement Cell</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
   <style>
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -21,6 +23,8 @@
     .modal-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
     .modal-scroll::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
     .modal-scroll::-webkit-scrollbar-thumb:hover { background: #4338ca; }
+    .cropper-view-box,
+    .cropper-face { border-radius: 50%; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-blue-50 to-green-50 min-h-screen pb-20 sm:pb-4">
@@ -455,6 +459,13 @@
         </div>
         
         <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Profile Picture (JPG/PNG)</label>
+          <input type="file" id="editProfilePic" accept=".jpg,.jpeg,.png,.webp" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+          <button type="button" id="cropProfilePicBtn" class="mt-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition text-sm hidden">Crop Selected Image</button>
+          <div id="currentProfilePic" class="mt-2 text-sm text-gray-600"></div>
+        </div>
+
+        <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Resume (PDF)</label>
           <input type="file" id="editResume" accept=".pdf" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
           <div id="currentResume" class="mt-2 text-sm text-gray-600"></div>
@@ -508,6 +519,40 @@
       </form>
     </div>
   </div>
+
+  <!-- Profile Image Crop Modal -->
+  <div id="profileCropModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-blue-900 to-indigo-700 text-white px-6 py-4 flex items-center justify-between">
+        <h3 class="text-xl font-bold">Crop Profile Picture</h3>
+        <button type="button" onclick="closeProfileCropper()" class="rounded-full p-1 hover:bg-white hover:bg-opacity-20">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="p-4 bg-gray-50">
+        <div class="bg-white rounded-xl p-2" style="height: 420px;">
+          <img id="profileCropImage" alt="Crop Profile" class="max-w-full block" style="max-height: 400px; margin: 0 auto;">
+        </div>
+        <p class="text-xs text-gray-600 mt-3">Adjust the circle and click Apply Crop. The final uploaded image will use this crop.</p>
+      </div>
+      <div class="px-4 pb-4 flex gap-2">
+        <button type="button" onclick="closeProfileCropper()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-400">Cancel</button>
+        <button type="button" onclick="applyProfileCrop()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700">Apply Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared Image Preview Modal -->
+  <div id="imagePreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-85 z-50 flex items-center justify-center p-4" onclick="closeImagePreview()">
+    <div class="relative w-full max-w-5xl" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeImagePreview()" class="absolute -top-12 right-0 text-white bg-black bg-opacity-40 rounded-full p-2 hover:bg-opacity-70">
+        <span class="material-icons">close</span>
+      </button>
+      <div class="bg-white rounded-2xl shadow-2xl p-3">
+        <img id="imagePreviewTag" src="" alt="Preview" class="w-full h-auto rounded-xl object-contain" style="max-height: 78vh;">
+      </div>
+    </div>
+  </div>
   <script>
     // Initialize Supabase client (v3 - fully isolated)
     if (!window.supabaseClient) {
@@ -529,6 +574,87 @@
     
     document.getElementById('profileIcon').onclick = toggleProfileModal;
     document.getElementById('profileIconMobile').onclick = toggleProfileModal;
+
+    let profileCropper = null;
+    let croppedProfilePicFile = null;
+
+    function openImagePreview(imageUrl) {
+      if (!imageUrl) return;
+      const img = document.getElementById('imagePreviewTag');
+      img.src = imageUrl;
+      document.getElementById('imagePreviewModal').classList.remove('hidden');
+    }
+
+    function closeImagePreview() {
+      document.getElementById('imagePreviewModal').classList.add('hidden');
+      document.getElementById('imagePreviewTag').src = '';
+    }
+
+    window.closeImagePreview = closeImagePreview;
+    window.openImagePreview = openImagePreview;
+
+    function setAvatar(elementId, initials, profilePicUrl, roundedClass = 'rounded-full') {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      if (profilePicUrl) {
+        el.innerHTML = `<img src="${profilePicUrl}" alt="Profile" class="w-full h-full object-cover ${roundedClass} cursor-zoom-in" onclick="event.stopPropagation(); openImagePreview(this.src)">`;
+      } else {
+        el.textContent = initials;
+      }
+    }
+
+    function destroyProfileCropper() {
+      if (profileCropper) {
+        profileCropper.destroy();
+        profileCropper = null;
+      }
+    }
+
+    function closeProfileCropper() {
+      document.getElementById('profileCropModal').classList.add('hidden');
+      destroyProfileCropper();
+    }
+
+    async function applyProfileCrop() {
+      if (!profileCropper) return;
+      const croppedCanvas = profileCropper.getCroppedCanvas({
+        width: 512,
+        height: 512,
+        imageSmoothingQuality: 'high'
+      });
+
+      if (!croppedCanvas) return;
+
+      const blob = await new Promise(resolve => croppedCanvas.toBlob(resolve, 'image/jpeg', 0.92));
+      if (!blob) return;
+
+      croppedProfilePicFile = new File([blob], `profile_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const previewUrl = URL.createObjectURL(blob);
+      document.getElementById('currentProfilePic').innerHTML = `<div class="flex items-center gap-3"><img src="${previewUrl}" alt="Cropped Profile" class="w-14 h-14 rounded-full object-cover border-2 border-blue-300"><span class="text-green-700 font-semibold">Cropped image ready to upload</span></div>`;
+      closeProfileCropper();
+    }
+
+    function openProfileCropper(file) {
+      const imageEl = document.getElementById('profileCropImage');
+      const reader = new FileReader();
+      reader.onload = () => {
+        imageEl.src = reader.result;
+        document.getElementById('profileCropModal').classList.remove('hidden');
+        destroyProfileCropper();
+        profileCropper = new Cropper(imageEl, {
+          aspectRatio: 1,
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 0.9,
+          background: false,
+          responsive: true
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    window.closeProfileCropper = closeProfileCropper;
+    window.applyProfileCrop = applyProfileCrop;
     
     // Smooth scroll function
     function scrollToSection(id) {
@@ -551,22 +677,23 @@
         
         const student = profileData.student;
         const initials = student.name.split(' ').map(w => w[0]).join('').toUpperCase();
+        const profilePic = student.profile_pic || '';
         
         // Set navbar profile info
         document.getElementById('studentName').textContent = student.name;
         document.getElementById('studentEmail').textContent = student.email;
-        document.getElementById('profileIcon').textContent = initials;
-        document.getElementById('profileIconMobile').textContent = initials;
+        setAvatar('profileIcon', initials, profilePic);
+        setAvatar('profileIconMobile', initials, profilePic);
         
         // Set hero section
-        document.getElementById('heroProfileIcon').textContent = initials;
+        setAvatar('heroProfileIcon', initials, profilePic, 'rounded-2xl');
         document.getElementById('heroName').textContent = `Welcome, ${student.name.split(' ')[0]}!`;
         document.getElementById('heroRegNo').textContent = student.reg_no;
         document.getElementById('heroDept').textContent = `${student.dept} - Year ${student.year} | Section ${student.section}`;
         document.getElementById('statCGPA').textContent = student.cgpa;
         
         // Set modal profile info
-        document.getElementById('modalProfileIcon').textContent = initials;
+        setAvatar('modalProfileIcon', initials, profilePic);
         document.getElementById('modalName').textContent = student.name;
         document.getElementById('modalEmail').textContent = student.email;
         document.getElementById('modalRegNo').textContent = student.reg_no;
@@ -843,10 +970,22 @@
       document.getElementById('editHobbies').value = student.hobbies || '';
       document.getElementById('editLeetcode').value = student.leetcode_link || '';
       document.getElementById('editGithub').value = student.github_link || '';
+      document.getElementById('editProfilePic').value = '';
+      document.getElementById('cropProfilePicBtn').classList.add('hidden');
+      croppedProfilePicFile = null;
       
       // Show current resume
       if (student.resume_url) {
         document.getElementById('currentResume').innerHTML = `<p class="text-green-600">✓ Resume uploaded | <a href="${student.resume_url}" target="_blank" class="text-blue-600 hover:underline">View Current</a></p>`;
+      } else {
+        document.getElementById('currentResume').innerHTML = '<p class="text-sm text-gray-500">No resume uploaded</p>';
+      }
+
+      // Show current profile picture
+      if (student.profile_pic) {
+        document.getElementById('currentProfilePic').innerHTML = `<div class="flex items-center gap-3"><img src="${student.profile_pic}" alt="Current Profile" class="w-14 h-14 rounded-full object-cover border-2 border-blue-300"><a href="${student.profile_pic}" target="_blank" class="text-blue-600 hover:underline">View Current</a></div>`;
+      } else {
+        document.getElementById('currentProfilePic').innerHTML = '<p class="text-sm text-gray-500">No profile picture uploaded</p>';
       }
       
       // Show current certificates
@@ -865,7 +1004,30 @@
     window.closeEditProfileModal = () => {
       document.getElementById('editProfileModal').classList.add('hidden');
       document.getElementById('editProfileMsg').innerHTML = '';
+      closeProfileCropper();
+      document.getElementById('cropProfilePicBtn').classList.add('hidden');
+      croppedProfilePicFile = null;
     };
+
+    document.getElementById('editProfilePic').addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        document.getElementById('cropProfilePicBtn').classList.add('hidden');
+        return;
+      }
+      croppedProfilePicFile = null;
+      document.getElementById('cropProfilePicBtn').classList.remove('hidden');
+      openProfileCropper(file);
+    });
+
+    document.getElementById('cropProfilePicBtn').addEventListener('click', () => {
+      const file = document.getElementById('editProfilePic').files[0];
+      if (!file) {
+        alert('Select an image first.');
+        return;
+      }
+      openProfileCropper(file);
+    });
     
     document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -909,6 +1071,28 @@
           
           console.log('Resume URL:', resumeUrl.publicUrl);
           updates.resume_url = resumeUrl.publicUrl;
+        }
+
+        // Handle profile picture upload
+        const selectedProfilePicFile = document.getElementById('editProfilePic').files[0];
+        const profilePicFile = croppedProfilePicFile || selectedProfilePicFile;
+        if (profilePicFile) {
+          const ext = (profilePicFile.type || '').includes('png') ? 'png' : 'jpg';
+          const picFileName = `${student.id}_profile_${Date.now()}.${ext}`;
+
+          const { error: picError } = await window.supabaseClient.storage
+            .from('Student Bucket')
+            .upload(picFileName, profilePicFile, { upsert: true });
+
+          if (picError) {
+            throw new Error(`Profile picture upload failed: ${picError.message}`);
+          }
+
+          const { data: picUrl } = window.supabaseClient.storage
+            .from('Student Bucket')
+            .getPublicUrl(picFileName);
+
+          updates.profile_pic = picUrl.publicUrl;
         }
         
         // Handle certificates upload
@@ -1073,7 +1257,7 @@
       
       const posterHtml = event.poster_url ? `
         <div class="mt-3">
-          <img src="${event.poster_url}" alt="${event.event_name}" class="w-full rounded-lg shadow-sm object-cover" style="max-height: 150px;">
+          <img src="${event.poster_url}" alt="${event.event_name}" class="w-full rounded-lg shadow-sm object-cover cursor-zoom-in" style="max-height: 150px;" onclick="openImagePreview(this.src)">
         </div>
       ` : '';
       
@@ -1477,7 +1661,7 @@
                 
                 ${event.poster_url ? `
                   <div class="mt-4">
-                    <img src="${event.poster_url}" alt="${event.event_name}" class="rounded-xl shadow-lg max-h-64 w-full object-cover">
+                    <img src="${event.poster_url}" alt="${event.event_name}" class="rounded-xl shadow-lg max-h-48 w-full object-cover cursor-zoom-in border border-pink-200" onclick="event.stopPropagation(); openImagePreview(this.src)">
                   </div>
                 ` : ''}
               </div>
