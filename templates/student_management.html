@@ -32,6 +32,25 @@
 
     .bg-fuchsia-100 { background-color: #ffd6ed !important; }
     .text-fuchsia-600 { color: #b71b95 !important; }
+    /* Additional fuchsia fallbacks used throughout the modal */
+    .text-fuchsia-100 { color: #ffe6f6 !important; }
+    .text-fuchsia-200 { color: #ffd1ee !important; }
+    .text-fuchsia-700 { color: #9b1a6e !important; }
+    .text-fuchsia-800 { color: #7a0f55 !important; }
+    .bg-fuchsia-50 { background-color: #fff0fb !important; }
+    .bg-fuchsia-200 { background-color: #ffbce8 !important; }
+    .hover\:from-fuchsia-700:hover { background-image: linear-gradient(90deg, #7a0f55, #5a0a3f) !important; }
+    .hover\:to-fuchsia-800:hover { background-image: linear-gradient(90deg, #7a0f55, #5a0a3f) !important; }
+    .from-fuchsia-900 { --tw-gradient-from: #4a044e; }
+    .to-fuchsia-700 { --tw-gradient-to: #920a6d; }
+
+    /* Targeted fallback for the View/Edit Student modal header to ensure gradient and white text show */
+    #viewModalHeader {
+      background-image: linear-gradient(90deg, #4a044e 0%, #920a6d 100%) !important;
+      background-color: #920a6d !important;
+      color: #ffffff !important;
+    }
+    #viewModalHeader h3, #viewModalHeader p { color: #ffffff !important; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-fuchsia-50 to-purple-50 min-h-screen">
@@ -219,7 +238,7 @@
     <!-- View/Edit Student Modal -->
     <div id="viewStudentModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
-        <div class="sticky top-0 bg-gradient-to-r from-fuchsia-900 to-purple-700 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+        <div id="viewModalHeader" class="sticky top-0 bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
           <div class="flex items-center gap-4">
             <div id="viewProfileIcon" class="bg-white text-fuchsia-800 rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold"></div>
             <div>
@@ -232,7 +251,7 @@
           </button>
         </div>
         
-        <div class="p-6">
+        <div class="p-6 ">
           <!-- Academic Information -->
           <div class="mb-6">
             <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -485,7 +504,7 @@
           <td class="p-4 text-center">${s.passport_available ? '<span class="material-icons text-green-600">check_circle</span>' : '<span class="material-icons text-gray-300">cancel</span>'}</td>
           <td class="p-4 text-center">${s.resume_url ? '<span class="material-icons text-fuchsia-600">description</span>' : '<span class="material-icons text-gray-300">description</span>'}</td>
           <td class="p-4 text-center">
-            <button onclick="viewStudent('${s.id}')" class="bg-fuchsia-600 text-white px-4 py-2 rounded-lg hover:bg-fuchsia-700 font-semibold inline-flex items-center gap-1 shadow-md hover-lift">
+            <button onclick="viewStudent('${s.id}')" class="bg-fuchsia-600 text-fuchsia-600 px-4 py-2 rounded-lg hover:bg-fuchsia-700 font-semibold inline-flex items-center gap-1 shadow-md hover-lift">
               <span class="material-icons text-sm">visibility</span>
               View
             </button>
