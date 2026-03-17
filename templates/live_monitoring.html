@@ -11,12 +11,28 @@
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .pulse-dot { animation: pulse 2s ease-in-out infinite; }
     .hover-lift { transition: all 0.3s; }
-    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    
+     /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+
+    .border-fuchsia-500 { border-color: #b71b95 !important; }
+
+    .bg-fuchsia-100 { background-color: #ffd6ed !important; }
+    .text-fuchsia-600 { color: #b71b95 !important; }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
   <!-- Enhanced Navbar -->
-  <nav class="bg-blue-800 text-white shadow-2xl">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-2xl">
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -25,7 +41,7 @@
           </div>
           <div>
             <h1 class="font-bold text-2xl">Live Monitoring</h1>
-            <p class="text-xs text-blue-100">Real-Time Exam Tracking</p>
+            <p class="text-xs text-fuchsia-100">Real-Time Exam Tracking</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
@@ -33,7 +49,7 @@
             <span class="material-icons text-sm pulse-dot">fiber_manual_record</span>
             <span class="text-sm font-semibold">Auto-Refresh: 10s</span>
           </div>
-          <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-800 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-lg">
+          <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-fuchsia-600 px-6 py-2 rounded-lg hover:bg-fuchsia-100 transition flex items-center gap-2 shadow-lg">
             <span class="material-icons text-sm">dashboard</span>
             <span>Dashboard</span>
           </a>

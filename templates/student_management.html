@@ -15,10 +15,27 @@
     .modal-scroll::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
     .modal-scroll::-webkit-scrollbar-thumb:hover { background: #4338ca; }
     .table-row:hover { background: linear-gradient(to right, #eff6ff, #f0f9ff); }
+
+     /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+
+    .border-fuchsia-500 { border-color: #b71b95 !important; }
+
+    .bg-fuchsia-100 { background-color: #ffd6ed !important; }
+    .text-fuchsia-600 { color: #b71b95 !important; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 min-h-screen">
-  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-6 py-4 shadow-xl">
+<body class="bg-gradient-to-br from-gray-50 via-fuchsia-50 to-purple-50 min-h-screen">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white px-6 py-4 shadow-xl">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
       <div class="flex items-center gap-3">
         <div class="bg-white bg-opacity-20 rounded-lg p-2">
@@ -26,10 +43,10 @@
         </div>
         <div>
           <h1 class="font-bold text-xl">Placement Cell Admin</h1>
-          <p class="text-xs text-blue-100">Student Management System</p>
+          <p class="text-xs text-fuchsia-100">Student Management System</p>
         </div>
       </div>
-      <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-700 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 font-semibold shadow-lg">
+      <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-fuchsia-600 px-6 py-2 rounded-lg hover:bg-fuchsia-50 transition flex items-center gap-2 font-semibold shadow-lg">
         <span class="material-icons">dashboard</span>
         <span>Dashboard</span>
       </a>
@@ -40,12 +57,12 @@
     <div class="mb-8 flex items-center justify-between">
       <div>
         <h2 class="text-4xl font-bold text-gray-800 flex items-center gap-3">
-          <span class="material-icons text-5xl text-blue-700">people</span>
+          <span class="material-icons text-5xl text-fuchsia-700">people</span>
           Student Management
         </h2>
         <p class="text-gray-600 mt-2">Manage student profiles and placement readiness</p>
       </div>
-      <div id="studentCount" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl shadow-lg">
+      <div id="studentCount" class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 px-8 py-4 rounded-xl shadow-lg">
         <p class="text-sm opacity-90">Total Students</p>
         <p class="text-4xl font-bold">0</p>
       </div>
@@ -54,31 +71,31 @@
     <!-- Filter & Search Section -->
     <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 hover-lift">
       <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800">
-        <span class="material-icons text-3xl mr-2 text-blue-600">filter_list</span> 
+        <span class="material-icons text-3xl mr-2 text-fuchsia-600">filter_list</span> 
         Filter Students
       </h3>
       <form id="filterForm" class="grid grid-cols-1 md:grid-cols-6 gap-4">
         <div>
           <label class="block text-sm font-semibold mb-2 text-gray-700">Department</label>
-          <select id="filterDept" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select id="filterDept" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500">
             <option value="">All Departments</option>
           </select>
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2 text-gray-700">Year</label>
-          <select id="filterYear" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select id="filterYear" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500">
             <option value="">All Years</option>
           </select>
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2 text-gray-700">Section</label>
-          <select id="filterSection" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select id="filterSection" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500">
             <option value="">All Sections</option>
           </select>
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2 text-gray-700">Arrears</label>
-          <select id="filterArrears" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select id="filterArrears" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500">
             <option value="">All Students</option>
             <option value="0">No Arrears</option>
             <option value="1">Has Arrears</option>
@@ -86,14 +103,14 @@
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2 text-gray-700">Passport</label>
-          <select id="filterPassport" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select id="filterPassport" class="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500">
             <option value="">All Students</option>
             <option value="true">Has Passport</option>
             <option value="false">No Passport</option>
           </select>
         </div>
         <div class="flex items-end">
-          <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 font-semibold flex items-center justify-center gap-2 shadow-lg">
+          <button type="submit" class="w-full bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white px-6 py-3 rounded-lg hover:from-fuchsia-700 hover:to-fuchsia-800 font-semibold flex items-center justify-center gap-2 shadow-lg">
             <span class="material-icons">search</span>
             Apply Filter
           </button>
@@ -105,7 +122,7 @@
     <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-bold flex items-center text-gray-800">
-          <span class="material-icons text-3xl mr-2 text-purple-600">group</span> 
+          <span class="material-icons text-3xl mr-2 text-fuchsia-600">group</span> 
           Student List
         </h3>
         <button id="addStudentBtn" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 font-semibold flex items-center gap-2 shadow-lg hover-lift">
@@ -124,34 +141,34 @@
     <!-- Add Student Modal -->
     <div id="addStudentModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
       <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
-        <h3 class="text-3xl font-bold mb-6 text-blue-700 flex items-center">
+        <h3 class="text-3xl font-bold mb-6 text-fuchsia-600 flex items-center">
           <span class="material-icons text-4xl mr-2">person_add</span> 
           Add New Student
         </h3>
         <form id="addStudentForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-2">Full Name *</label>
-            <input name="name" type="text" placeholder="Enter student name" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="name" type="text" placeholder="Enter student name" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Email *</label>
-            <input name="email" type="email" placeholder="student@example.com" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="email" type="email" placeholder="student@example.com" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Password *</label>
-            <input name="password" type="password" placeholder="Enter password" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="password" type="password" placeholder="Enter password" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Register Number *</label>
-            <input name="reg_no" type="text" placeholder="e.g. 2021CS001" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="reg_no" type="text" placeholder="e.g. 2021CS001" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Department *</label>
-            <input name="dept" type="text" placeholder="e.g. CSE, ECE, ME" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="dept" type="text" placeholder="e.g. CSE, ECE, ME" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Year *</label>
-            <select name="year" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <select name="year" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
               <option value="">Select Year</option>
               <option value="1">1st Year</option>
               <option value="2">2nd Year</option>
@@ -162,23 +179,23 @@
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Section *</label>
-            <input name="section" type="text" placeholder="e.g. A, B, C" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="section" type="text" placeholder="e.g. A, B, C" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Mobile Number *</label>
-            <input name="mobile_number" type="tel" placeholder="10-digit mobile" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="mobile_number" type="tel" placeholder="10-digit mobile" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">CGPA *</label>
-            <input name="cgpa" type="number" step="0.01" min="0" max="10" placeholder="e.g. 8.5" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="cgpa" type="number" step="0.01" min="0" max="10" placeholder="e.g. 8.5" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Current Arrears *</label>
-            <input name="no_of_arrears" type="number" min="0" placeholder="0" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <input name="no_of_arrears" type="number" min="0" placeholder="0" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
           </div>
           <div class="md:col-span-2">
             <label class="block text-sm font-semibold mb-2">History of Arrears *</label>
-            <select name="history_of_arrears" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+            <select name="history_of_arrears" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-fuchsia-500" required>
               <option value="false">No History of Arrears</option>
               <option value="true">Has History of Arrears</option>
             </select>
@@ -202,12 +219,12 @@
     <!-- View/Edit Student Modal -->
     <div id="viewStudentModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
-        <div class="sticky top-0 bg-gradient-to-r from-blue-900 to-purple-700 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+        <div class="sticky top-0 bg-gradient-to-r from-fuchsia-900 to-purple-700 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
           <div class="flex items-center gap-4">
-            <div id="viewProfileIcon" class="bg-white text-blue-800 rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold"></div>
+            <div id="viewProfileIcon" class="bg-white text-fuchsia-800 rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold"></div>
             <div>
               <h3 class="text-2xl font-bold" id="viewStudentName"></h3>
-              <p class="text-blue-100" id="viewStudentEmail"></p>
+              <p class="text-fuchsia-100" id="viewStudentEmail"></p>
             </div>
           </div>
           <button onclick="closeViewModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
@@ -219,11 +236,11 @@
           <!-- Academic Information -->
           <div class="mb-6">
             <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <span class="material-icons text-blue-600">school</span>
+              <span class="material-icons text-fuchsia-600">school</span>
               Academic Information
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="bg-blue-50 rounded-xl p-4">
+              <div class="bg-fuchsia-50 rounded-xl p-4">
                 <p class="text-sm text-gray-600 mb-1">Register Number</p>
                 <p class="text-lg font-bold text-gray-800" id="viewRegNo"></p>
               </div>
@@ -263,10 +280,10 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl p-6 text-center">
-                <span class="material-icons text-5xl text-blue-700 mb-2">assignment</span>
-                <p class="text-3xl font-bold text-blue-800" id="viewAssignedExams">0</p>
-                <p class="text-sm text-blue-700 font-semibold">Assigned Exams</p>
+              <div class="bg-gradient-to-br from-fuchsia-100 to-fuchsia-200 rounded-xl p-6 text-center">
+                <span class="material-icons text-5xl text-fuchsia-700 mb-2">assignment</span>
+                <p class="text-3xl font-bold text-fuchsia-800" id="viewAssignedExams">0</p>
+                <p class="text-sm text-fuchsia-700 font-semibold">Assigned Exams</p>
               </div>
               <div class="bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl p-6 text-center">
                 <span class="material-icons text-5xl text-indigo-700 mb-2">task_alt</span>
@@ -280,7 +297,7 @@
               </div>
             </div>
 
-            <div class="mt-4 bg-blue-50 rounded-xl p-4">
+            <div class="mt-4 bg-fuchsia-50 rounded-xl p-4">
               <p class="text-sm font-semibold text-gray-700 mb-2">Assigned Exams & Scores</p>
               <div id="viewExamScores" class="space-y-2">
                 <p class="text-sm text-gray-500">No assigned exams</p>
@@ -302,8 +319,8 @@
                   <p class="text-lg font-bold text-gray-800" id="viewMobile"></p>
                 </div>
               </div>
-              <div class="bg-blue-50 rounded-xl p-4 flex items-center gap-3">
-                <span class="material-icons text-blue-600 text-3xl">email</span>
+              <div class="bg-fuchsia-50 rounded-xl p-4 flex items-center gap-3">
+                <span class="material-icons text-fuchsia-600 text-3xl">email</span>
                 <div>
                   <p class="text-sm text-gray-600">Email Address</p>
                   <p class="text-lg font-bold text-gray-800" id="viewEmailFull"></p>
@@ -348,7 +365,7 @@
                 <p class="text-sm font-semibold text-gray-700 mb-1">Weaknesses</p>
                 <p class="text-gray-800" id="viewWeakness">-</p>
               </div>
-              <div class="bg-blue-50 rounded-xl p-4">
+              <div class="bg-fuchsia-50 rounded-xl p-4">
                 <p class="text-sm font-semibold text-gray-700 mb-1">Ambition</p>
                 <p class="text-gray-800" id="viewAmbition">-</p>
               </div>
@@ -435,14 +452,14 @@
       const pageStudents = paginatedStudents.slice(start, end);
 
       let html = '<div class="mb-4 flex items-center justify-between">';
-      html += '<div class="text-sm text-gray-600">Showing <span class="font-bold text-blue-700 text-lg">' + pageStudents.length + '</span> of <span class="font-bold">' + paginatedStudents.length + '</span> student(s)</div>';
+      html += '<div class="text-sm text-gray-600">Showing <span class="font-bold text-fuchsia-700 text-lg">' + pageStudents.length + '</span> of <span class="font-bold">' + paginatedStudents.length + '</span> student(s)</div>';
       html += '<div class="flex gap-2">';
       html += '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-icons text-sm">verified</span>' + paginatedStudents.filter(s => s.passport_available).length + ' with Passport</span>';
-      html += '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-icons text-sm">description</span>' + paginatedStudents.filter(s => s.resume_url).length + ' with Resume</span>';
+      html += '<span class="bg-fuchsia-100 text-fuchsia-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-icons text-sm">description</span>' + paginatedStudents.filter(s => s.resume_url).length + ' with Resume</span>';
       html += '</div></div>';
       html += '<div class="overflow-x-auto rounded-xl border-2 border-gray-200">';
       html += '<table class="w-full text-sm">';
-      html += '<thead><tr class="bg-gradient-to-r from-blue-700 to-purple-700 text-white">' +
+      html += '<thead><tr class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white">' +
         '<th class="p-4 text-left font-bold">Name</th>' +
         '<th class="p-4 text-left font-bold">Reg No</th>' +
         '<th class="p-4 text-left font-bold">Dept</th>' +
@@ -455,20 +472,20 @@
         '<th class="p-4 text-center font-bold">Actions</th>' +
         '</tr></thead><tbody>';
       for (const s of pageStudents) {
-        const cgpaColor = s.cgpa >= 9 ? 'text-green-700 font-bold' : s.cgpa >= 7 ? 'text-blue-700 font-bold' : 'text-orange-600';
+        const cgpaColor = s.cgpa >= 9 ? 'text-green-700 font-bold' : s.cgpa >= 7 ? 'text-fuchsia-700 font-bold' : 'text-orange-600';
         const arrearsColor = s.no_of_arrears === 0 ? 'text-green-700' : 'text-red-700 font-bold';
         html += `<tr class="border-b table-row cursor-pointer transition">
           <td class="p-4 font-bold text-gray-800">${s.name}</td>
           <td class="p-4 text-gray-600">${s.reg_no}</td>
-          <td class="p-4"><span class="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-xs font-bold">${s.dept}</span></td>
+          <td class="p-4"><span class="bg-fuchsia-100 text-fuchsia-600 px-3 py-1 rounded-full text-xs font-bold">${s.dept}</span></td>
           <td class="p-4 text-center font-semibold">${s.year}</td>
           <td class="p-4 text-center font-semibold">${s.section}</td>
           <td class="p-4 text-center ${cgpaColor} text-lg font-bold">${s.cgpa}</td>
           <td class="p-4 text-center ${arrearsColor} text-lg font-bold">${s.no_of_arrears}</td>
           <td class="p-4 text-center">${s.passport_available ? '<span class="material-icons text-green-600">check_circle</span>' : '<span class="material-icons text-gray-300">cancel</span>'}</td>
-          <td class="p-4 text-center">${s.resume_url ? '<span class="material-icons text-blue-600">description</span>' : '<span class="material-icons text-gray-300">description</span>'}</td>
+          <td class="p-4 text-center">${s.resume_url ? '<span class="material-icons text-fuchsia-600">description</span>' : '<span class="material-icons text-gray-300">description</span>'}</td>
           <td class="p-4 text-center">
-            <button onclick="viewStudent('${s.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold inline-flex items-center gap-1 shadow-md hover-lift">
+            <button onclick="viewStudent('${s.id}')" class="bg-fuchsia-600 text-white px-4 py-2 rounded-lg hover:bg-fuchsia-700 font-semibold inline-flex items-center gap-1 shadow-md hover-lift">
               <span class="material-icons text-sm">visibility</span>
               View
             </button>
@@ -578,7 +595,7 @@
           badgeClass = pct >= 60 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
         }
 
-        scoreListHtml += `<div class="flex items-center justify-between bg-white border border-blue-100 rounded-lg px-3 py-2">\n          <span class="text-sm font-semibold text-gray-800">${examTitle}</span>\n          <span class="text-xs font-bold px-2 py-1 rounded-full ${badgeClass}">${scoreText}</span>\n        </div>`;
+        scoreListHtml += `<div class="flex items-center justify-between bg-white border border-fuchsia-100 rounded-lg px-3 py-2">\n          <span class="text-sm font-semibold text-gray-800">${examTitle}</span>\n          <span class="text-xs font-bold px-2 py-1 rounded-full ${badgeClass}">${scoreText}</span>\n        </div>`;
       }
 
       const avgScore = completedCount ? (totalPct / completedCount).toFixed(1) : '0.0';
@@ -624,7 +641,7 @@
       
       // Resume
       if (student.resume_url) {
-        document.getElementById('viewResume').innerHTML = `<a href="${student.resume_url}" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-semibold"><span class="material-icons text-sm">description</span>View Resume</a>`;
+        document.getElementById('viewResume').innerHTML = `<a href="${student.resume_url}" target="_blank" class="text-fuchsia-600 hover:text-fuchsia-800 flex items-center gap-1 font-semibold"><span class="material-icons text-sm">description</span>View Resume</a>`;
       } else {
         document.getElementById('viewResume').innerHTML = '<p class="text-sm text-gray-500">No resume uploaded</p>';
       }
@@ -700,7 +717,7 @@
       window.allStudents = students || [];
       
       // Update count
-      document.getElementById('studentCount').innerHTML = `<p class="text-sm opacity-90">Total Students</p><p class="text-4xl font-bold">${students ? students.length : 0}</p>`;
+      document.getElementById('studentCount').innerHTML = `<p class="text-white text-sm opacity-90">Total Students</p><p class="text-white text-4xl font-bold">${students ? students.length : 0}</p>`;
       
       // Render student list with pagination
       if (!students || students.length === 0) {
@@ -789,7 +806,7 @@
       
       html += '<div>';
       html += '<label class="block text-sm font-semibold mb-2">1. Select Exam to Assign *</label>';
-      html += '<select id="bulkExamId" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>';
+      html += '<select id="bulkExamId" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500" required>';
       html += '<option value="">Choose an Exam...</option>';
       for (const exam of exams) {
         html += `<option value="${exam.id}">${exam.title}</option>`;
@@ -802,7 +819,7 @@
       html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
       html += '<div>';
       html += '<label class="block text-xs text-gray-600 mb-1">Department</label>';
-      html += '<select id="bulkDept" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">';
+      html += '<select id="bulkDept" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-fuchsia-500">';
       html += '<option value="">All Departments</option>';
       for (const d of depts) {
         html += `<option value="${d}">${d}</option>`;
@@ -811,7 +828,7 @@
       html += '</div>';
       html += '<div>';
       html += '<label class="block text-xs text-gray-600 mb-1">Minimum CGPA</label>';
-      html += '<select id="bulkCgpa" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">';
+      html += '<select id="bulkCgpa" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-fuchsia-500">';
       html += '<option value="">All CGPA</option>';
       html += '<option value="9">9.0 and above</option>';
       html += '<option value="8">8.0 and above</option>';

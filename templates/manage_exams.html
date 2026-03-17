@@ -10,11 +10,28 @@
   <style>
     .hover-lift { transition: all 0.3s; }
     .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+  
+    /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+
+    .border-fuchsia-500 { border-color: #b71b95 !important; }
+
+    .bg-fuchsia-100 { background-color: #ffd6ed !important; }
+    .text-fuchsia-600 { color: #b71b95 !important; }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
   <!-- Enhanced Navbar -->
-  <nav class="bg-blue-800 text-white shadow-2xl">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-2xl">
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -23,10 +40,10 @@
           </div>
           <div>
             <h1 class="font-bold text-2xl">Manage Exams</h1>
-            <p class="text-xs text-blue-100">View, Edit & Delete Exams</p>
+            <p class="text-xs text-fuchsia-100">View, Edit & Delete Exams</p>
           </div>
         </div>
-        <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-blue-800 px-6 py-2 rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-lg">
+        <a href="{{ url_for('admin_dashboard') }}" class="bg-white text-fuchsia-600 px-6 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 shadow-lg">
           <span class="material-icons text-sm">dashboard</span>
           <span>Dashboard</span>
         </a>
@@ -37,10 +54,10 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
-        <span class="material-icons text-4xl text-blue-600">assignment</span>
+        <span class="material-icons text-4xl text-fuchsia-900">assignment</span>
         All Exams
       </h2>
-      <button onclick="location.reload()" class="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition">
+      <button onclick="location.reload()" class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-fuchsia-600 px-4 py-2 rounded-lg transition">
         <span class="material-icons text-sm">refresh</span>
         <span class="text-sm font-semibold">Refresh</span>
       </button>
@@ -71,12 +88,12 @@
       let html = '';
       for (const exam of exams) {
         const examDate = exam.date ? new Date(exam.date).toLocaleString() : 'No date set';
-        html += `<div class="bg-white rounded-2xl shadow-lg hover-lift border-l-4 border-blue-500">
+        html += `<div class="bg-white rounded-2xl shadow-lg hover-lift border-l-4 border-fuchsia-500">
           <div class="p-6">
             <div class="flex items-start justify-between mb-4">
               <div class="flex items-center gap-3">
-                <div class="bg-blue-100 rounded-xl p-3">
-                  <span class="material-icons text-blue-600 text-3xl">description</span>
+                <div class="bg-fuchsia-100 rounded-xl p-3">
+                  <span class="material-icons text-fuchsia-600 text-3xl">description</span>
                 </div>
                 <div>
                   <h3 class="font-bold text-2xl text-gray-800">${exam.title}</h3>
@@ -121,7 +138,7 @@
       
       let html = `<div class="flex items-center justify-between mb-6 pb-4 border-b-2">
         <h3 class='text-3xl font-bold text-gray-800 flex items-center gap-3'>
-          <span class="material-icons text-blue-600 text-4xl">edit</span>
+          <span class="material-icons text-fuchsia-600 text-4xl">edit</span>
           Edit Exam: ${exam.title}
         </h3>
         <button onclick="document.getElementById('editPanel').style.display='none'" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2">
@@ -144,7 +161,7 @@
           <label class='block font-semibold text-gray-700 mb-2'>Instructions</label>
           <textarea id='editInstructions' class='w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none' rows='4' required>${exam.instructions || ''}</textarea>
         </div>
-        <button type='submit' class='w-full bg-blue-600 text-white py-4 rounded-lg font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2'>
+        <button type='submit' class='w-full bg-fuchsia-600 text-white py-4 rounded-lg font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2'>
           <span class="material-icons">save</span>
           <span>Save Changes</span>
         </button>
@@ -206,7 +223,7 @@
             <option value='${opts[2]||''}' ${q.correct_answer===opts[2]?'selected':''}>${opts[2]||''}</option>
             <option value='${opts[3]||''}' ${q.correct_answer===opts[3]?'selected':''}>${opts[3]||''}</option>
           </select>
-          <button type='submit' class='bg-blue-600 text-white px-4 py-2 rounded'>Save Question</button>
+          <button type='submit' class='bg-fuchsia-600 text-white px-4 py-2 rounded'>Save Question</button>
         </form>`;
       document.getElementById('editPanel').innerHTML += html;
       document.getElementById('editQuestionForm').onsubmit = async function(e) {

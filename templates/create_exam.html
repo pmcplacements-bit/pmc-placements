@@ -7,38 +7,52 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <style>
+    /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-  <nav class="bg-blue-700 text-white px-6 py-4 flex justify-between items-center">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white px-6 py-4 flex justify-between items-center">
     <span class="font-bold text-xl">Placement Cell Admin</span>
-    <a href="{{ url_for('admin_dashboard') }}" class="bg-gray-200 text-blue-700 px-4 py-2 rounded hover:bg-gray-300">← Dashboard</a>
+    <a href="{{ url_for('admin_dashboard') }}" class="bg-gray-200 text-fuchsia-600 px-4 py-2 rounded hover:bg-gray-300">← Dashboard</a>
   </nav>
   
   <div class="max-w-7xl mx-auto py-8 px-4">
     <!-- Step 1: Create Exam -->
     <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-      <h2 class="text-2xl font-bold mb-2 text-blue-700">Step 1: Create Exam</h2>
+      <h2 class="text-2xl font-bold mb-2 text-fuchsia-700">Step 1: Create Exam</h2>
       <p class="text-gray-600 mb-6">Fill in the basic exam details to get started</p>
       
       <form id="createExamForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label class="block text-sm font-semibold mb-2">Exam Title *</label>
-          <input type="text" id="title" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. Aptitude Test 2025" required>
+          <input type="text" id="title" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="e.g. Aptitude Test 2025" required>
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2">Exam Date *</label>
-          <input type="date" id="date" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" required>
+          <input type="date" id="date" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" required>
         </div>
         <div>
           <label class="block text-sm font-semibold mb-2">Duration (minutes) *</label>
-          <input type="number" id="duration" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="60" required>
+          <input type="number" id="duration" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="60" required>
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-semibold mb-2">Instructions</label>
-          <textarea id="instructions" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Enter exam instructions here..." rows="3"></textarea>
+          <textarea id="instructions" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Enter exam instructions here..." rows="3"></textarea>
         </div>
         <div class="md:col-span-2">
-          <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold">✓ Create Exam</button>
+          <button type="submit" class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white px-8 py-3 rounded-lg hover:from-fuchsia-800 hover:to-fuchsia-600 font-semibold">✓ Create Exam</button>
         </div>
       </form>
       
@@ -49,15 +63,15 @@
     <!-- Step 2: Add Questions (Hidden until exam created) -->
     <div id="questionSection" class="hidden">
       <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <h2 class="text-2xl font-bold mb-2 text-blue-700">Step 2: Add Questions</h2>
+        <h2 class="text-2xl font-bold mb-2 text-fuchsia-700">Step 2: Add Questions</h2>
         <p class="text-gray-600 mb-6">Choose your preferred method to add questions</p>
         
         <!-- Section Configuration -->
         <div class="bg-gray-50 p-4 rounded-lg mb-6">
           <h3 class="font-semibold mb-3">Section Configuration (Optional)</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" id="sectionTitle" class="px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Section Title (e.g. Aptitude)">
-            <input type="text" id="sectionDesc" class="px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Section Description">
+            <input type="text" id="sectionTitle" class="px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Section Title (e.g. Aptitude)">
+            <input type="text" id="sectionDesc" class="px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Section Description">
           </div>
         </div>
 
@@ -65,7 +79,7 @@
         <div class="mb-6">
           <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-8">
-              <button type="button" onclick="switchTab('single')" id="tabSingle" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 font-semibold">
+              <button type="button" onclick="switchTab('single')" id="tabSingle" class="tab-btn border-b-2 border-fuchsia-500 text-fuchsia-600 py-4 px-1 font-semibold">
                 📝 Single Question
               </button>
               <button type="button" onclick="switchTab('bulk')" id="tabBulk" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 font-semibold">
@@ -87,7 +101,7 @@
             <!-- Question Type Selector -->
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold mb-2">Question Type *</label>
-              <select id="questionType" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" required onchange="switchQuestionType()">
+              <select id="questionType" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" required onchange="switchQuestionType()">
                 <option value="mcq">Multiple Choice (MCQ)</option>
                 <option value="true_false">True/False</option>
                 <option value="short_answer">Short Answer</option>
@@ -100,30 +114,30 @@
             
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold mb-2">Question Text *</label>
-              <textarea id="questionText" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Enter your question here..." rows="3" required></textarea>
+              <textarea id="questionText" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Enter your question here..." rows="3" required></textarea>
             </div>
             
             <!-- MCQ Options (default) -->
             <div id="mcqOptions" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label class="block text-sm font-semibold mb-2">Option 1 *</label>
-                <input type="text" id="option1" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 1">
+                <input type="text" id="option1" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Option 1">
               </div>
               <div>
                 <label class="block text-sm font-semibold mb-2">Option 2 *</label>
-                <input type="text" id="option2" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 2">
+                <input type="text" id="option2" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Option 2">
               </div>
               <div>
                 <label class="block text-sm font-semibold mb-2">Option 3 *</label>
-                <input type="text" id="option3" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 3">
+                <input type="text" id="option3" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Option 3">
               </div>
               <div>
                 <label class="block text-sm font-semibold mb-2">Option 4 *</label>
-                <input type="text" id="option4" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Option 4">
+                <input type="text" id="option4" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Option 4">
               </div>
               <div>
                 <label class="block text-sm font-semibold mb-2">Correct Answer *</label>
-                <select id="correctAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                <select id="correctAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
                   <option value="">Select Correct Answer</option>
                   <option value="option1">Option 1</option>
                   <option value="option2">Option 2</option>
@@ -136,7 +150,7 @@
             <!-- True/False Options (hidden by default) -->
             <div id="trueFalseOptions" class="md:col-span-2 hidden">
               <label class="block text-sm font-semibold mb-2">Correct Answer *</label>
-              <select id="trueFalseAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+              <select id="trueFalseAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
                 <option value="">Select Correct Answer</option>
                 <option value="true">True</option>
                 <option value="false">False</option>
@@ -147,7 +161,7 @@
             <div id="shortAnswerOptions" class="md:col-span-2 hidden">
               <div class="mb-4">
                 <label class="block text-sm font-semibold mb-2">Expected Answer (for auto-grading)</label>
-                <input type="text" id="expectedAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="Leave empty for manual grading">
+                <input type="text" id="expectedAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="Leave empty for manual grading">
               </div>
               <label class="flex items-center">
                 <input type="checkbox" id="caseSensitive" class="mr-2 w-4 h-4">
@@ -158,32 +172,32 @@
             <!-- Essay Options (hidden by default) -->
             <div id="essayOptions" class="md:col-span-2 hidden">
               <label class="block text-sm font-semibold mb-2">Maximum Word Count</label>
-              <input type="number" id="maxWordCount" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. 500">
+              <input type="number" id="maxWordCount" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="e.g. 500">
             </div>
             
             <!-- Fill Blank Options (hidden by default) -->
             <div id="fillBlankOptions" class="md:col-span-2 hidden">
-              <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+              <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-3 text-sm">
                 <p class="font-semibold mb-1">Format Guide:</p>
                 <p>Use [blank] or _____ to indicate where students should fill in answers.</p>
                 <p class="mt-2"><strong>Example:</strong> The capital of France is [blank].</p>
               </div>
               <label class="block text-sm font-semibold mb-2">Correct Answer(s) *</label>
-              <input type="text" id="fillBlankAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="For multiple blanks, separate with commas">
+              <input type="text" id="fillBlankAnswer" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="For multiple blanks, separate with commas">
             </div>
             
             <!-- Matching Options (hidden by default) -->
             <div id="matchingOptions" class="md:col-span-2 hidden">
-              <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+              <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-3 text-sm">
                 <p class="font-semibold mb-1">Enter matching pairs below:</p>
               </div>
               <div id="matchingPairsList" class="space-y-2 mb-3"></div>
-              <button type="button" onclick="addMatchingPair()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">+ Add Pair</button>
+              <button type="button" onclick="addMatchingPair()" class="bg-fuchsia-500 text-white px-4 py-2 rounded hover:bg-gradient-to-r from-fuchsia-900">+ Add Pair</button>
             </div>
             
             <!-- Coding Question Options (hidden by default) -->
             <div id="codingOptions" class="md:col-span-2 hidden">
-              <div class="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <div class="bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-lg p-4 mb-4">
                 <h4 class="font-semibold mb-2 text-purple-700">💻 Coding Question Setup</h4>
                 <p class="text-sm text-gray-700">Configure language support, time limits, and test cases for this coding problem.</p>
               </div>
@@ -202,33 +216,33 @@
                 <div>
                   <div class="mb-4">
                     <label class="block text-sm font-semibold mb-2">Time Limit (ms)</label>
-                    <input type="number" id="timeLimit" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" value="2000" placeholder="2000">
+                    <input type="number" id="timeLimit" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" value="2000" placeholder="2000">
                   </div>
                   <div>
                     <label class="block text-sm font-semibold mb-2">Memory Limit (MB)</label>
-                    <input type="number" id="memoryLimit" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" value="256" placeholder="256">
+                    <input type="number" id="memoryLimit" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" value="256" placeholder="256">
                   </div>
                 </div>
               </div>
               
               <div class="mt-4">
                 <label class="block text-sm font-semibold mb-2">Input Format Description</label>
-                <textarea id="inputFormat" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" rows="2" placeholder="e.g. First line: integer n, Second line: n space-separated integers"></textarea>
+                <textarea id="inputFormat" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" rows="2" placeholder="e.g. First line: integer n, Second line: n space-separated integers"></textarea>
               </div>
               
               <div class="mt-4">
                 <label class="block text-sm font-semibold mb-2">Output Format Description</label>
-                <textarea id="outputFormat" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" rows="2" placeholder="e.g. Single integer representing the sum"></textarea>
+                <textarea id="outputFormat" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" rows="2" placeholder="e.g. Single integer representing the sum"></textarea>
               </div>
               
               <div class="mt-4">
                 <label class="block text-sm font-semibold mb-2">Constraints</label>
-                <textarea id="constraints" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" rows="2" placeholder="e.g. 1 <= n <= 10^5, -10^9 <= arr[i] <= 10^9"></textarea>
+                <textarea id="constraints" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" rows="2" placeholder="e.g. 1 <= n <= 10^5, -10^9 <= arr[i] <= 10^9"></textarea>
               </div>
               
               <div class="mt-4">
                 <label class="block text-sm font-semibold mb-2">Template Code (Python)</label>
-                <textarea id="templateCodePython" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 font-mono text-sm" rows="4" placeholder="def solve():\n    # Write your code here\n    pass"></textarea>
+                <textarea id="templateCodePython" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500 font-mono text-sm" rows="4" placeholder="def solve():\n    # Write your code here\n    pass"></textarea>
               </div>
               
               <div class="mt-4">
@@ -241,11 +255,11 @@
             <!-- Common Fields -->
             <div>
               <label class="block text-sm font-semibold mb-2">Points</label>
-              <input type="number" id="points" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" value="10" placeholder="10">
+              <input type="number" id="points" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" value="10" placeholder="10">
             </div>
             <div>
               <label class="block text-sm font-semibold mb-2">Difficulty</label>
-              <select id="difficulty" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+              <select id="difficulty" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
                 <option value="">Select Difficulty</option>
                 <option value="Easy">Easy</option>
                 <option value="Medium">Medium</option>
@@ -255,16 +269,16 @@
             
             <div>
               <label class="block text-sm font-semibold mb-2">Negative Mark</label>
-              <input type="number" id="negativeMark" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. -0.25" step="0.01">
+              <input type="number" id="negativeMark" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="e.g. -0.25" step="0.01">
             </div>
             <div>
               <label class="block text-sm font-semibold mb-2">Tags (comma separated)</label>
-              <input type="text" id="tags" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="e.g. math, algebra">
+              <input type="text" id="tags" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" placeholder="e.g. math, algebra">
             </div>
             
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold mb-2">Question Image (Optional)</label>
-              <input type="file" id="questionImage" accept="image/*" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+              <input type="file" id="questionImage" accept="image/*" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
             </div>
             
             <div class="md:col-span-2 space-y-2">
@@ -295,24 +309,24 @@
             <h3 class="font-semibold mb-4 text-lg">Choose Upload Method:</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- CSV Upload -->
-              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-400 transition">
+              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-fuchsia-400 transition">
                 <h4 class="font-semibold mb-2 flex items-center">📊 CSV File</h4>
-                <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+                <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-3 text-sm">
                   <p class="font-semibold mb-1">Format:</p>
                   <code class="text-xs">question_text, option1, option2, option3, option4, correct_answer, negative_mark, difficulty, tags</code>
                 </div>
                 <form id="bulkUploadForm" class="space-y-3">
-                  <input type="file" id="bulkCSV" accept=".csv" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
-                  <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold">📤 Upload CSV</button>
+                  <input type="file" id="bulkCSV" accept=".csv" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
+                  <button type="submit" class="w-full bg-gradient-to-r from-fuchsia-900 text-white py-2 rounded-lg hover:bg-fuchsia-700 font-semibold">📤 Upload CSV</button>
                 </form>
                 <div id="bulkMsg" class="text-green-600 mt-2 text-sm font-semibold"></div>
                 <div id="bulkError" class="text-red-500 mt-2 text-sm font-semibold"></div>
               </div>
 
               <!-- Word Document Upload -->
-              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-400 transition">
+              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-fuchsia-400 transition">
                 <h4 class="font-semibold mb-2 flex items-center">📄 Word Document</h4>
-                <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3 text-sm">
+                <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-3 text-sm">
                   <p class="font-semibold mb-1">Format Example:</p>
                   <code class="text-xs block">
                     1. What is 2+2?<br>
@@ -323,7 +337,7 @@
                   </code>
                 </div>
                 <form id="wordUploadForm" class="space-y-3">
-                  <input type="file" id="wordDocFile" accept=".docx" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+                  <input type="file" id="wordDocFile" accept=".docx" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
                   <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">📤 Upload Word Doc</button>
                 </form>
                 <div id="wordMsg" class="text-green-600 mt-2 text-sm font-semibold"></div>
@@ -337,15 +351,15 @@
         <div id="contentMultiple" class="tab-content hidden">
           <div class="mb-4">
             <label class="block text-sm font-semibold mb-2">Number of Questions</label>
-            <input type="number" id="numQuestions" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" min="1" max="50" value="5" placeholder="How many questions?">
-            <button type="button" id="generateSectionsBtn" class="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold">🔄 Generate Question Forms</button>
+            <input type="number" id="numQuestions" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" min="1" max="50" value="5" placeholder="How many questions?">
+            <button type="button" id="generateSectionsBtn" class="mt-4 bg-gradient-to-r from-fuchsia-900 text-white px-6 py-3 rounded-lg hover:bg-fuchsia-700 font-semibold">🔄 Generate Question Forms</button>
           </div>
           <form id="multiQuestionForm" class="space-y-4"></form>
         </div>
 
         <!-- Tab Content: Word Document Upload -->
         <div id="contentWord" class="tab-content hidden">
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div class="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-4 mb-4">
             <h4 class="font-semibold mb-2">📝 Word Document Format Guide:</h4>
             <div class="text-sm space-y-2">
               <p><strong>Format 1 - Simple:</strong></p>
@@ -373,9 +387,9 @@
           <form id="wordUploadForm" class="space-y-4">
             <div>
               <label class="block text-sm font-semibold mb-2">Upload Word Document (.docx)</label>
-              <input type="file" id="wordFile" accept=".docx,.doc" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+              <input type="file" id="wordFile" accept=".docx,.doc" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">📤 Parse & Upload Questions</button>
+            <button type="submit" class="w-full bg-gradient-to-r from-fuchsia-900 text-white py-3 rounded-lg hover:bg-fuchsia-700 font-semibold">📤 Parse & Upload Questions</button>
           </form>
           
           <div id="wordMsg" class="text-green-600 mt-4 font-semibold"></div>
@@ -386,7 +400,7 @@
 
       <!-- Questions List -->
       <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
-        <h2 class="text-2xl font-bold mb-4 text-blue-700">Added Questions</h2>
+        <h2 class="text-2xl font-bold mb-4 text-fuchsia-700">Added Questions</h2>
         <div id="questionsList" class="space-y-4"></div>
       </div>
     </div>
@@ -524,13 +538,13 @@
       // Hide all tabs
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(el => {
-        el.classList.remove('border-blue-500', 'text-blue-600');
+        el.classList.remove('border-fuchsia-500', 'text-fuchsia-600');
         el.classList.add('border-transparent', 'text-gray-500');
       });
       
       // Show selected tab
       document.getElementById('content' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
-      document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('border-blue-500', 'text-blue-600');
+      document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('border-fuchsia-500', 'text-fuchsia-600');
       document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('border-transparent', 'text-gray-500');
     };
 
@@ -1001,7 +1015,7 @@
       data.forEach((q, index) => {
         // Question type badge colors
         const typeBadges = {
-          'mcq': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'MCQ' },
+          'mcq': { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800', label: 'MCQ' },
           'true_false': { bg: 'bg-green-100', text: 'text-green-800', label: 'True/False' },
           'short_answer': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Short Answer' },
           'essay': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Essay' },
@@ -1015,7 +1029,7 @@
         html += `<div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
           <div class="flex justify-between items-start mb-2">
             <div class="flex gap-2">
-              <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">Q${index + 1}</span>
+              <span class="bg-fuchsia-100 text-fuchsia-800 px-3 py-1 rounded-full text-sm font-semibold">Q${index + 1}</span>
               <span class="${badge.bg} ${badge.text} px-3 py-1 rounded-full text-sm font-semibold">${badge.label}</span>
             </div>
             <div class="space-x-2">
@@ -1086,7 +1100,7 @@
         if (q.points) html += `<span class="bg-green-100 px-2 py-1 rounded">💯 ${q.points} points</span>`;
         if (q.section) html += `<span class="bg-purple-100 px-2 py-1 rounded">📂 ${q.section}</span>`;
         if (q.difficulty) html += `<span class="bg-orange-100 px-2 py-1 rounded">📊 ${q.difficulty}</span>`;
-        if (q.tags) html += `<span class="bg-blue-100 px-2 py-1 rounded">🏷️ ${q.tags}</span>`;
+        if (q.tags) html += `<span class="bg-fuchsia-100 px-2 py-1 rounded">🏷️ ${q.tags}</span>`;
         html += '</div>';
         
         if (q.image) {

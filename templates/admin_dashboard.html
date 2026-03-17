@@ -22,11 +22,41 @@
     .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.2); }
     .stat-card { transition: all 0.3s; }
     .stat-card:hover { transform: scale(1.05); }
+
+    /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+
+
+    .border-fuchsia-500 { border-color: #b71b95 !important; }
+
+    .bg-fuchsia-100 { background-color: #ffd6ed !important; }
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    /* Emerald fallbacks (used for emerald-colored UI elements) */
+    .text-emerald-600 { color: #059669 !important; }
+    .bg-emerald-100 { background-color: #d1fae5 !important; }
+    .group-hover\:bg-emerald-200:hover { background-color: #a7f3d0 !important; }
+    .border-emerald-500 { border-color: #10b981 !important; }
+
+    /* Cyan fallbacks (used for cyan/turquoise UI elements) */
+    .text-cyan-600 { color: #0891b2 !important; }
+    .bg-cyan-100 { background-color: #cffafe !important; }
+    .hover\:bg-cyan-200:hover { background-color: #a5f3fc !important; }
+    .border-cyan-500 { border-color: #06b6d4 !important; }
+    .text-cyan-100 { color: #e0f2fe !important; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 via-fuchsia-50 to-indigo-50 min-h-screen">
   <!-- Enhanced Navbar -->
-  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-2xl">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-2xl">
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -35,7 +65,7 @@
           </div>
           <div>
             <img src="{{ url_for('media_file', filename='logo-text.png') }}" alt="Campus Test" class="h-6 md:h-8 object-contain" />
-            <p class="text-xs text-blue-100">Training & Placement Cell | Administrator Portal</p>
+            <p class="text-xs text-fuchsia-100">Training & Placement Cell | Administrator Portal</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
@@ -43,7 +73,7 @@
             <span class="material-icons">person</span>
             <div class="text-sm">
               <p class="font-semibold">Administrator</p>
-              <p class="text-xs text-blue-100">Full Access</p>
+              <p class="text-xs text-fuchsia-100">Full Access</p>
             </div>
           </div>
           <button id="logoutBtn" class="bg-red-500 px-6 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-2 shadow-lg">
@@ -58,12 +88,12 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Hero Section -->
     <section class="mb-8 slide-in">
-      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
+      <div class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 rounded-2xl shadow-2xl p-8 text-white">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <h2 class="text-4xl font-bold mb-2">Welcome Back, Admin!</h2>
-            <p class="text-blue-100 text-lg">Manage your examination system efficiently</p>
-            <p class="text-blue-200 text-sm mt-1" id="currentDate"></p>
+            <p class="text-fuchsia-100 text-lg">Manage your examination system efficiently</p>
+            <p class="text-fuchsia-200 text-sm mt-1" id="currentDate"></p>
           </div>
           <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4">
             <div class="text-center">
@@ -80,23 +110,23 @@
     <section class="mb-8 fade-in">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <span class="material-icons text-3xl text-blue-600">analytics</span>
+          <span class="material-icons text-3xl text-fuchsia-600">analytics</span>
           Quick Statistics
         </h3>
-        <button onclick="loadDashboardStats()" class="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition">
+        <button onclick="loadDashboardStats()" class="flex items-center gap-2 bg-fuchsia-100 hover:bg-fuchsia-200 text-fuchsia-700 px-4 py-2 rounded-lg transition">
           <span class="material-icons text-sm">refresh</span>
           <span class="text-sm font-semibold">Refresh</span>
         </button>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-blue-500">
+        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-fuchsia-500">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-500 text-sm font-semibold">Total Students</p>
-              <p class="text-3xl font-bold text-blue-600" id="totalStudents">0</p>
+              <p class="text-3xl font-bold text-fuchsia-600" id="totalStudents">0</p>
             </div>
-            <div class="bg-blue-100 rounded-full p-3">
-              <span class="material-icons text-blue-600 text-3xl">school</span>
+            <div class="bg-fuchsia-100 rounded-full p-3">
+              <span class="material-icons text-fuchsia-600 text-3xl">school</span>
             </div>
           </div>
         </div>
@@ -125,14 +155,14 @@
           </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-orange-500">
+        <div class="bg-white rounded-xl shadow-lg p-6 stat-card border-l-4 border-cyan-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-500 text-sm font-semibold">Submissions</p>
-              <p class="text-3xl font-bold text-orange-600" id="totalSubmissions">0</p>
+              <p class="text-cyan-600 text-sm font-semibold">Submissions</p>
+              <p class="text-3xl font-bold text-cyan-600" id="totalSubmissions">0</p>
             </div>
-            <div class="bg-orange-100 rounded-full p-3">
-              <span class="material-icons text-orange-600 text-3xl">send</span>
+            <div class="bg-cyan-100 rounded-full p-3">
+              <span class="material-icons text-cyan-600 text-3xl">send</span>
             </div>
           </div>
         </div>
@@ -142,22 +172,22 @@
     <!-- Main Navigation Cards -->
     <section class="mb-8 fade-in">
       <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span class="material-icons text-3xl text-blue-600">dashboard</span>
+        <span class="material-icons text-3xl text-fuchsia-600">dashboard</span>
         Management Console
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Create Exam Card -->
-        <a href="{{ url_for('create_exam') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-blue-500">
+        <a href="{{ url_for('create_exam') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-fuchsia-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
-              <div class="bg-blue-100 rounded-xl p-4 group-hover:bg-blue-200 transition">
-                <span class="material-icons text-blue-600 text-4xl">add_circle</span>
+              <div class="bg-fuchsia-100 rounded-xl p-4 group-hover:bg-fuchsia-100 transition">
+                <span class="material-icons text-fuchsia-600 text-4xl">add_circle</span>
               </div>
-              <span class="material-icons text-gray-400 group-hover:text-blue-600 transition">arrow_forward</span>
+              <span class="material-icons text-gray-400 group-hover:text-fuchsia-600 transition">arrow_forward</span>
             </div>
             <h4 class="font-bold text-xl text-gray-800 mb-2">Create Exam</h4>
             <p class="text-gray-600 text-sm">Design new exams with questions, set duration, and configure exam parameters</p>
-            <div class="mt-4 flex items-center gap-2 text-blue-600 font-semibold text-sm">
+            <div class="mt-4 flex items-center gap-2 text-fuchsia-600 font-semibold text-sm">
               <span>Get Started</span>
               <span class="material-icons text-sm">chevron_right</span>
             </div>
@@ -313,19 +343,19 @@
     <!-- Recent Activity Section -->
     <section class="fade-in">
       <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span class="material-icons text-3xl text-blue-600">history</span>
+        <span class="material-icons text-3xl text-fuchsia-600">history</span>
         Quick Actions
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
           <div class="flex items-center gap-3 mb-3">
-            <div class="bg-blue-100 rounded-lg p-2">
-              <span class="material-icons text-blue-600">file_upload</span>
+            <div class="bg-fuchsia-100 rounded-lg p-2">
+              <span class="material-icons text-fuchsia-600">file_upload</span>
             </div>
             <h4 class="font-bold text-gray-800">Bulk Upload</h4>
           </div>
           <p class="text-gray-600 text-sm mb-3">Import multiple students or questions at once</p>
-          <a href="{{ url_for('student_management') }}" class="text-blue-600 text-sm font-semibold hover:underline">Upload Now →</a>
+          <a href="{{ url_for('student_management') }}" class="text-fuchsia-600 text-sm font-semibold hover:underline">Upload Now →</a>
         </div>
 
         <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">

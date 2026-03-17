@@ -19,11 +19,28 @@
     .modal-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
     .modal-scroll::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
     .modal-scroll::-webkit-scrollbar-thumb:hover { background: #4338ca; }
+
+     /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+
+    .border-fuchsia-500 { border-color: #b71b95 !important; }
+
+    .bg-fuchsia-100 { background-color: #ffd6ed !important; }
+    .text-fuchsia-600 { color: #b71b95 !important; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 via-fuchsia-50 to-purple-50 min-h-screen">
   <!-- Navigation Bar -->
-  <nav class="bg-gradient-to-r from-blue-900 to-purple-700 text-white shadow-lg">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-lg">
     <div class="max-w-7xl mx-auto px-4 py-3 md:py-4">
       <div class="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
         <div class="flex items-center space-x-2 md:space-x-3 w-full md:w-auto">
@@ -35,7 +52,7 @@
           </div>
           <div class="flex-1">
             <h1 class="font-bold text-base md:text-xl">Events Management</h1>
-            <p class="text-xs text-blue-100 hidden sm:block">Manage Campus Events & Announcements</p>
+            <p class="text-xs text-fuchsia-100 hidden sm:block">Manage Campus Events & Announcements</p>
           </div>
         </div>
         <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
@@ -43,7 +60,7 @@
             <span class="material-icons text-sm">add</span>
             <span class="text-sm md:text-base">Add Event</span>
           </button>
-          <a href="{{ url_for('admin_dashboard') }}" class="flex-1 md:flex-none bg-blue-600 px-3 md:px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+          <a href="{{ url_for('admin_dashboard') }}" class="flex-1 md:flex-none bg-fuchsia-600 px-3 md:px-4 py-2 rounded-lg hover:bg-fuchsia-700 transition flex items-center justify-center gap-2">
             <span class="material-icons text-sm">dashboard</span>
             <span class="text-sm md:text-base">Dashboard</span>
           </a>
@@ -54,16 +71,16 @@
 
   <div class="max-w-7xl mx-auto px-4 py-4 md:py-6">
     <!-- Stats Card -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl md:rounded-2xl shadow-xl p-4 md:p-6 mb-4 md:mb-6 text-white fade-in">
+    <div class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 rounded-xl md:rounded-2xl shadow-xl p-4 md:p-6 mb-4 md:mb-6 text-white fade-in">
       <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
         <div class="text-center md:text-left">
           <h2 class="text-xl md:text-2xl font-bold mb-1 md:mb-2">Campus Events Overview</h2>
-          <p class="text-sm md:text-base text-blue-100">Manage all campus events, circulars, and announcements</p>
+          <p class="text-sm md:text-base text-white">Manage all campus events, circulars, and announcements</p>
         </div>
         <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center">
           <span class="material-icons text-4xl md:text-5xl mb-1">event_available</span>
           <p class="text-2xl md:text-3xl font-bold" id="totalEvents">0</p>
-          <p class="text-xs text-blue-100">Total Events</p>
+          <p class="text-xs text-fuchsia-100">Total Events</p>
         </div>
       </div>
     </div>
@@ -72,16 +89,16 @@
     <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4 md:mb-6 fade-in">
       <div class="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3 md:gap-4">
         <div class="flex items-center gap-2">
-          <span class="material-icons text-blue-600">filter_list</span>
+          <span class="material-icons text-fuchsia-600">filter_list</span>
           <h3 class="font-bold text-gray-800">Filter Events</h3>
         </div>
-        <select id="filterStatus" onchange="loadEvents()" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
+        <select id="filterStatus" onchange="loadEvents()" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none text-sm md:text-base">
           <option value="all">All Events</option>
           <option value="upcoming">Upcoming</option>
           <option value="past">Past</option>
         </select>
-        <input type="text" id="searchEvent" onkeyup="loadEvents()" placeholder="Search by event name..." class="flex-1 w-full md:flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
-        <button onclick="loadEvents()" class="w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+        <input type="text" id="searchEvent" onkeyup="loadEvents()" placeholder="Search by event name..." class="flex-1 w-full md:flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none text-sm md:text-base">
+        <button onclick="loadEvents()" class="w-full md:w-auto bg-fuchsia-600 text-white px-4 py-2 rounded-lg hover:bg-fuchsia-700 transition flex items-center justify-center gap-2">
           <span class="material-icons text-sm">refresh</span>
           <span>Refresh</span>
         </button>
@@ -91,7 +108,7 @@
     <!-- Events Grid -->
     <div id="eventsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
       <!-- Events will be loaded here -->
-      <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center justify-center gap-2">
+      <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-fuchsia-100 border border-fuchsia-400 text-fuchsia-700 px-4 py-3 rounded-xl flex items-center justify-center gap-2">
         <span class="material-icons animate-spin">refresh</span>
         <span class="text-sm md:text-base">Loading events...</span>
       </div>
@@ -178,7 +195,7 @@
   <!-- Edit Event Modal -->
   <div id="editEventModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
-      <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-t-2xl flex justify-between items-center">
+      <div class="sticky top-0 bg-fuchsia-100 text-fuchsia-600 p-6 rounded-t-2xl flex justify-between items-center">
         <div class="flex items-center gap-3">
           <span class="material-icons text-3xl">edit</span>
           <h3 class="text-2xl font-bold">Edit Event</h3>
@@ -193,28 +210,28 @@
         
         <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Event Name *</label>
-          <input type="text" id="editEventName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+          <input type="text" id="editEventName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none">
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Event Date *</label>
-            <input type="date" id="editEventDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+            <input type="date" id="editEventDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Event Time *</label>
-            <input type="time" id="editEventTime" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+            <input type="time" id="editEventTime" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none">
           </div>
         </div>
 
         <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Event Description</label>
-          <textarea id="editEventDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"></textarea>
+          <textarea id="editEventDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none"></textarea>
         </div>
 
         <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Event Location</label>
-          <input type="text" id="editEventLocation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+          <input type="text" id="editEventLocation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none">
         </div>
 
         <div class="mb-4">
@@ -225,7 +242,7 @@
 
         <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Event Category</label>
-          <select id="editEventCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+          <select id="editEventCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none">
             <option value="placement">Placement Drive</option>
             <option value="workshop">Workshop</option>
             <option value="seminar">Seminar</option>
@@ -238,13 +255,13 @@
 
         <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Registration URL (Optional)</label>
-          <input type="url" id="editEventUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="https://forms.google.com/...">
+          <input type="url" id="editEventUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none" placeholder="https://forms.google.com/...">
           <p class="text-xs text-gray-500 mt-1">Add a registration form or event details link</p>
         </div>
 
         <div class="flex gap-3">
           <button type="button" onclick="closeEditEventModal()" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-400 transition">Cancel</button>
-          <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2">
+          <button type="submit" class="flex-1 bg-fuchsia-600 text-white py-3 rounded-lg font-bold hover:bg-fuchsia-700 transition flex items-center justify-center gap-2">
             <span class="material-icons">save</span>
             Update Event
           </button>
@@ -275,7 +292,7 @@
 
         <!-- Event Details -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div class="bg-blue-50 rounded-xl p-4">
+          <div class="bg-fuchsia-50 rounded-xl p-4">
             <p class="text-sm text-gray-600 mb-1 flex items-center gap-2">
               <span class="material-icons text-sm">calendar_today</span>
               Event Date
@@ -315,12 +332,12 @@
           <p class="text-gray-800" id="viewEventDescription"></p>
         </div>
 
-        <div id="viewEventUrlContainer" class="hidden bg-blue-50 rounded-xl p-4">
+        <div id="viewEventUrlContainer" class="hidden bg-fuchsia-50 rounded-xl p-4">
           <p class="text-sm text-gray-600 mb-2 flex items-center gap-2">
             <span class="material-icons text-sm">link</span>
             Registration Link
           </p>
-          <a id="viewEventUrl" href="" target="_blank" class="text-blue-600 hover:underline break-all"></a>
+          <a id="viewEventUrl" href="" target="_blank" class="text-fuchsia-600 hover:underline break-all"></a>
         </div>
       </div>
     </div>
@@ -407,7 +424,7 @@
           
           // Category colors
           const categoryColors = {
-            'placement': 'blue',
+            'placement': 'fuchsia',
             'workshop': 'green',
             'seminar': 'purple',
             'cultural': 'pink',
@@ -418,7 +435,7 @@
           const color = categoryColors[event.category] || 'gray';
           
           html += `
-            <div class="bg-white rounded-xl shadow-lg hover-lift overflow-hidden border-t-4 border-${color}-500">
+            <div class="bg-white rounded-xl shadow-lg hover-lift overflow-hidden border-t-4 border-fuchsia-500">
               <div class="relative">
                 <img src="${event.poster_url}" alt="${event.event_name}" class="w-full h-40 md:h-48 object-cover">
                 ${isPast ? '<div class="absolute top-2 right-2 bg-gray-600 text-white px-2 md:px-3 py-1 rounded-full text-xs font-bold">Past Event</div>' : '<div class="absolute top-2 right-2 bg-green-500 text-white px-2 md:px-3 py-1 rounded-full text-xs font-bold">Upcoming</div>'}
@@ -426,7 +443,7 @@
               <div class="p-4 md:p-5">
                 <div class="flex flex-col sm:flex-row items-start justify-between gap-2 mb-3">
                   <h3 class="font-bold text-base md:text-lg text-gray-800 flex-1">${event.event_name}</h3>
-                  <span class="bg-${color}-100 text-${color}-700 px-2 py-1 rounded text-xs font-semibold capitalize whitespace-nowrap">${event.category}</span>
+                  <span class="bg-fuchsia-100 text-fuchsia-600 px-2 py-1 rounded text-xs font-semibold capitalize whitespace-nowrap">${event.category}</span>
                 </div>
                 
                 <div class="space-y-2 mb-4">
@@ -451,7 +468,7 @@
                     <span class="material-icons text-sm">visibility</span>
                     <span>View</span>
                   </button>
-                  <button onclick="editEvent('${event.id}')" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-xs md:text-sm font-semibold flex items-center justify-center gap-1">
+                  <button onclick="editEvent('${event.id}')" class="flex-1 bg-fuchsia-100 text-fuchsia-600 py-2 rounded-lg hover:bg-fuchsia-700 transition text-xs md:text-sm font-semibold flex items-center justify-center gap-1">
                     <span class="material-icons text-sm">edit</span>
                     <span>Edit</span>
                   </button>
@@ -531,7 +548,7 @@
         document.getElementById('editEventUrl').value = event.url || '';
         
         document.getElementById('currentPoster').innerHTML = `
-          <p class="text-sm text-gray-600">Current poster: <a href="${event.poster_url}" target="_blank" class="text-blue-600 hover:underline">View</a></p>
+          <p class="text-sm text-gray-600">Current poster: <a href="${event.poster_url}" target="_blank" class="text-fuchsia-600 hover:underline">View</a></p>
         `;
         
         document.getElementById('editEventModal').classList.remove('hidden');
@@ -566,7 +583,7 @@
       e.preventDefault();
       
       try {
-        document.getElementById('addEventMsg').innerHTML = '<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Adding event...</div>';
+        document.getElementById('addEventMsg').innerHTML = '<div class="bg-fuchsia-100 border border-fuchsia-400 text-fuchsia-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Adding event...</div>';
         
         const posterFile = document.getElementById('eventPoster').files[0];
         if (!posterFile) {
@@ -620,7 +637,7 @@
       e.preventDefault();
       
       try {
-        document.getElementById('editEventMsg').innerHTML = '<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Updating event...</div>';
+        document.getElementById('editEventMsg').innerHTML = '<div class="bg-fuchsia-100 border border-fuchsia-400 text-fuchsia-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Updating event...</div>';
         
         const eventId = document.getElementById('editEventId').value;
         const updates = {

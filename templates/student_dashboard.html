@@ -25,11 +25,22 @@
     .modal-scroll::-webkit-scrollbar-thumb:hover { background: #4338ca; }
     .cropper-view-box,
     .cropper-face { border-radius: 50%; }
+    /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-blue-50 to-green-50 min-h-screen pb-20 sm:pb-4">
   <!-- Enhanced Navbar -->
-  <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-lg">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-lg">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-3">
@@ -65,23 +76,23 @@
   <!-- Mobile Bottom Navigation -->
   <nav class="fixed bottom-0 left-0 w-full bg-white border-t shadow-2xl z-50 md:hidden">
     <div class="flex justify-around items-center py-2">
-      <button onclick="scrollToSection('hero')" class="flex flex-col items-center text-blue-700 hover:text-blue-900 transition py-1">
+      <button onclick="scrollToSection('hero')" class="flex flex-col items-center text-fuchsia-600 hover:text-fuchsia-800 transition py-1">
         <span class="material-icons text-sm">home</span>
         <span class="text-xs font-semibold">Home</span>
       </button>
-      <button onclick="scrollToSection('circulars')" class="flex flex-col items-center text-blue-700 hover:text-blue-900 transition py-1">
+      <button onclick="scrollToSection('circulars')" class="flex flex-col items-center text-fuchsia-600 hover:text-fuchsia-800 transition py-1">
         <span class="material-icons text-sm">campaign</span>
         <span class="text-xs font-semibold">Notice</span>
       </button>
-      <button onclick="scrollToSection('exams')" class="flex flex-col items-center text-blue-700 hover:text-blue-900 transition py-1">
+      <button onclick="scrollToSection('exams')" class="flex flex-col items-center text-fuchsia-600 hover:text-fuchsia-800 transition py-1">
         <span class="material-icons text-sm">assignment</span>
         <span class="text-xs font-semibold">Exams</span>
       </button>
-      <button onclick="scrollToSection('results')" class="flex flex-col items-center text-blue-700 hover:text-blue-900 transition py-1">
+      <button onclick="scrollToSection('results')" class="flex flex-col items-center text-fuchsia-600 hover:text-fuchsia-800 transition py-1">
         <span class="material-icons text-sm">bar_chart</span>
         <span class="text-xs font-semibold">Results</span>
       </button>
-      <button onclick="toggleProfileModal()" class="flex flex-col items-center text-blue-700 hover:text-blue-900 transition py-1">
+      <button onclick="toggleProfileModal()" class="flex flex-col items-center text-fuchsia-600 hover:text-fuchsia-800 transition py-1">
         <span class="material-icons text-sm">person</span>
         <span class="text-xs font-semibold">Profile</span>
       </button>
@@ -94,7 +105,7 @@
       <div class="lg:col-span-8">
     <!-- Hero Section with Stats -->
     <section id="hero" class="mb-8 fade-in">
-      <div class="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl shadow-2xl p-8 text-white">
+      <div class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 rounded-2xl shadow-2xl p-8 text-white">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div class="flex items-center gap-6">
             <div id="heroProfileIcon" class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl w-24 h-24 flex items-center justify-center text-4xl font-bold"></div>
@@ -226,7 +237,7 @@
   <!-- Advanced Profile Modal -->
   <div id="profileModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
-      <div class="sticky top-0 bg-gradient-to-r from-blue-900 to-blue-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
+      <div class="sticky top-0 bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
         <div class="flex items-center gap-4">
           <div id="modalProfileIcon" class="bg-white text-blue-800 rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold"></div>
           <div>
@@ -243,7 +254,7 @@
         <!-- Academic Information -->
         <div class="mb-6">
           <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span class="material-icons text-blue-600">school</span>
+            <span class="material-icons text-fuchsia-600">school</span>
             Academic Information
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -305,8 +316,8 @@
                 <p class="text-lg font-bold text-gray-800" id="modalMobile"></p>
               </div>
             </div>
-            <div class="bg-blue-50 rounded-xl p-4 flex items-center gap-3">
-              <span class="material-icons text-blue-600 text-3xl">email</span>
+            <div class="bg-fuchsia-50 rounded-xl p-4 flex items-center gap-3">
+              <span class="material-icons text-fuchsia-600 text-3xl">email</span>
               <div>
                 <p class="text-sm text-gray-600">Email Address</p>
                 <p class="text-lg font-bold text-gray-800" id="modalEmailFull"></p>
@@ -322,7 +333,7 @@
               <span class="material-icons text-indigo-600">work</span>
               Placement Profile
             </h4>
-            <button onclick="editPlacementProfile()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+            <button onclick="editPlacementProfile()" class="bg-fuchsia-600 text-white px-4 py-2 rounded-lg hover:bg-fuchsia-700 transition flex items-center gap-2">
               <span class="material-icons text-sm">edit</span>
               Edit Profile
             </button>
@@ -436,7 +447,7 @@
   <!-- Edit Placement Profile Modal -->
   <div id="editProfileModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-4 modal-scroll" style="max-height: 85vh; overflow-y: auto;">
-      <div class="sticky top-0 bg-gradient-to-r from-indigo-900 to-indigo-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
+      <div class="sticky top-0 bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
         <h3 class="text-2xl font-bold">Edit Placement Profile</h3>
         <button onclick="closeEditProfileModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
           <span class="material-icons text-3xl">close</span>
@@ -447,21 +458,21 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Passport Available</label>
-            <select id="editPassport" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+            <select id="editPassport" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none">
               <option value="false">No</option>
               <option value="true">Yes</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Aadhar Number</label>
-            <input type="text" id="editAadhar" maxlength="12" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none" placeholder="Enter 12-digit Aadhar">
+            <input type="text" id="editAadhar" maxlength="12" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-fuchsia-500 focus:outline-none" placeholder="Enter 12-digit Aadhar">
           </div>
         </div>
         
         <div class="mb-4">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Profile Picture (JPG/PNG)</label>
           <input type="file" id="editProfilePic" accept=".jpg,.jpeg,.png,.webp" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-          <button type="button" id="cropProfilePicBtn" class="mt-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition text-sm hidden">Crop Selected Image</button>
+          <button type="button" id="cropProfilePicBtn" class="mt-2 bg-fuchsia-600 text-white px-3 py-2 rounded-lg hover:bg-fuchsia-700 transition text-sm hidden">Crop Selected Image</button>
           <div id="currentProfilePic" class="mt-2 text-sm text-gray-600"></div>
         </div>
 

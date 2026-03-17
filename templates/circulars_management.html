@@ -12,11 +12,29 @@
     .fade-in { animation: fadeIn 0.6s ease-out; }
     .hover-lift { transition: all 0.3s; }
     .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+
+     /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
+      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
+    }
+    /* Fallback text colors for Tailwind fuchsia utilities */
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .hover\:text-fuchsia-800:hover { color: #770582 !important; }
+    /* Dark fuchsia hero gradient fallback */
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
+      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
+    }
+
+    .border-fuchsia-500 { border-color: #b71b95 !important; }
+
+    .bg-fuchsia-100 { background-color: #ffd6ed !important; }
+    .text-fuchsia-600 { color: #b71b95 !important; }
+    .bg-fuchsia-600 { color: #b71b95 !important; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 via-fuchsia-50 to-purple-50 min-h-screen">
   <!-- Navbar -->
-  <nav class="bg-gradient-to-r from-blue-900 to-purple-900 text-white shadow-2xl">
+  <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-2xl">
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -25,7 +43,7 @@
           </a>
           <div>
             <h1 class="font-bold text-2xl">Circulars Management</h1>
-            <p class="text-xs text-blue-100">Create and publish circulars to students</p>
+            <p class="text-xs text-fuchsia-100">Create and publish circulars to students</p>
           </div>
         </div>
         <button id="logoutBtn" class="bg-red-500 px-6 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-2">
@@ -40,10 +58,10 @@
     <!-- Add Circular Button -->
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-        <span class="material-icons text-4xl text-purple-600">campaign</span>
+        <span class="material-icons text-4xl text-fuchsia-600">campaign</span>
         All Circulars
       </h2>
-      <button onclick="openCreateModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition flex items-center gap-2 shadow-lg">
+      <button onclick="openCreateModal()" class="bg-fuchsia-600 px-6 py-3 rounded-xl font-bold transition flex items-center gap-2 shadow-lg">
         <span class="material-icons">add_circle</span>
         <span>Create Circular</span>
       </button>
@@ -51,7 +69,7 @@
 
     <!-- Circulars List -->
     <div id="circularsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div class="col-span-3 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2">
+      <div class="col-span-3 bg-fuchsia-100 border border-fuchsia-600 text-fuchsia-600 px-4 py-3 rounded-xl flex items-center gap-2">
         <span class="material-icons animate-spin">refresh</span>
         <span>Loading circulars...</span>
       </div>
@@ -61,7 +79,7 @@
   <!-- Create/Edit Circular Modal -->
   <div id="circularModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8 max-h-full" style="max-height: calc(100vh - 4rem);">
-      <div class="sticky top-0 bg-gradient-to-r from-blue-900 to-purple-900 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+      <div class="sticky top-0 bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
         <h3 class="text-2xl font-bold" id="modalTitle">Create New Circular</h3>
         <button onclick="closeModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
           <span class="material-icons text-3xl">close</span>
@@ -167,7 +185,7 @@
         
         <div class="flex gap-3 mt-6">
           <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition">Cancel</button>
-          <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition flex items-center justify-center gap-2">
+          <button type="submit" class="flex-1 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-bold hover:from-fuchsia-700 hover:to-purple-700 transition flex items-center justify-center gap-2">
             <span class="material-icons">save</span>
             <span>Save Circular</span>
           </button>
@@ -234,7 +252,7 @@
 
         if (!circulars || circulars.length === 0) {
           document.getElementById('circularsList').innerHTML = `
-            <div class="col-span-3 bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+            <div class="col-span-3 border-2 border-dashed border-fuchsia-500 rounded-xl p-8 text-center">
               <span class="material-icons text-6xl text-gray-400 mb-2">campaign</span>
               <p class="text-gray-500 text-lg">No circulars created yet</p>
               <p class="text-gray-400 text-sm mt-2">Click "Create Circular" to publish your first circular</p>
@@ -253,7 +271,7 @@
           const priority = priorityColors[circular.priority] || priorityColors['normal'];
           
           const categoryColors = {
-            'placement': 'bg-blue-100 text-blue-700',
+            'placement': 'bg-fuchsia-100 text-fuchsia-700',
             'academic': 'bg-green-100 text-green-700',
             'examination': 'bg-purple-100 text-purple-700',
             'general': 'bg-gray-100 text-gray-700',
@@ -308,7 +326,7 @@
                 
                 <div class="flex gap-2">
                   ${circular.file_url ? `
-                    <a href="${circular.file_url}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition text-center flex items-center justify-center gap-1">
+                    <a href="${circular.file_url}" target="_blank" class="flex-1 bg-fuchsia-100 text-fuchsia-700 px-4 py-2 rounded-lg hover:bg-fuchsia-200 transition text-center flex items-center justify-center gap-1">
                       <span class="material-icons text-sm">download</span>
                       <span class="text-sm font-semibold">View</span>
                     </a>
@@ -373,7 +391,7 @@
           document.getElementById('currentFile').innerHTML = `
             <div class="flex items-center gap-2 text-sm text-gray-600">
               <span class="material-icons text-sm">attach_file</span>
-              <a href="${circular.file_url}" target="_blank" class="text-blue-600 hover:underline">View current file</a>
+              <a href="${circular.file_url}" target="_blank" class="text-fuchsia-600 hover:underline">View current file</a>
             </div>
           `;
         }
@@ -410,7 +428,7 @@
       e.preventDefault();
 
       const msgDiv = document.getElementById('formMessage');
-      msgDiv.innerHTML = '<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Saving circular...</div>';
+      msgDiv.innerHTML = '<div class="bg-fuchsia-100 border border-fuchsia-400 text-fuchsia-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons animate-spin">refresh</span>Saving circular...</div>';
 
       try {
         const title = document.getElementById('circularTitle').value;
