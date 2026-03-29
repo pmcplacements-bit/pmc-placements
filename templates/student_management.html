@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Management | Placement Cell</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
@@ -144,10 +145,20 @@
           <span class="material-icons text-3xl mr-2 text-fuchsia-600">group</span> 
           Student List
         </h3>
-        <button id="addStudentBtn" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 font-semibold flex items-center gap-2 shadow-lg hover-lift">
-          <span class="material-icons">person_add</span> 
-          Add Student
-        </button>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button onclick="downloadStudentTemplate()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-semibold flex items-center gap-2 shadow hover-lift text-sm">
+            <span class="material-icons text-sm">download</span>
+            Download Template
+          </button>
+          <button onclick="openBulkUpload()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 font-semibold flex items-center gap-2 shadow hover-lift text-sm">
+            <span class="material-icons text-sm">upload_file</span>
+            Bulk Upload Excel
+          </button>
+          <button id="addStudentBtn" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 font-semibold flex items-center gap-2 shadow-lg hover-lift">
+            <span class="material-icons">person_add</span>
+            Add Student
+          </button>
+        </div>
       </div>
       <div id="studentList" class="overflow-x-auto"></div>
       <!-- Pagination -->
@@ -232,6 +243,80 @@
         </form>
         <div id="addStudentMsg" class="mt-4"></div>
         <div id="addStudentError" class="mt-4"></div>
+      </div>
+    </div>
+
+    <!-- Bulk Upload Students Modal -->
+    <div id="bulkUploadModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-start justify-center z-50 hidden overflow-y-auto p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-8">
+        <div class="bg-gradient-to-r from-indigo-900 to-indigo-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
+          <div>
+            <h3 class="text-2xl font-bold flex items-center gap-2"><span class="material-icons">upload_file</span> Bulk Upload Students</h3>
+            <p class="text-indigo-100 text-sm mt-1">Upload a filled Excel file to add multiple students at once</p>
+          </div>
+          <button onclick="closeBulkUpload()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
+            <span class="material-icons text-3xl">close</span>
+          </button>
+        </div>
+        <div class="p-6">
+          <!-- Instructions -->
+          <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-5">
+            <h4 class="font-bold text-indigo-800 mb-2 flex items-center gap-2"><span class="material-icons text-sm">info</span> How to use</h4>
+            <ul class="text-sm text-indigo-700 space-y-1 list-disc ml-4">
+              <li>Click <strong>Download Excel Template</strong> below, fill in student data (one student per row).</li>
+              <li><strong>Do not rename or reorder columns</strong> in the template.</li>
+              <li>Year must be a number 1–5. History of Arrears: write <strong>Yes</strong> or <strong>No</strong>.</li>
+              <li>Students with a duplicate email are automatically skipped.</li>
+            </ul>
+            <button onclick="downloadStudentTemplate()" class="mt-3 bg-indigo-700 text-white px-5 py-2 rounded-lg hover:bg-indigo-800 font-semibold flex items-center gap-2 text-sm shadow">
+              <span class="material-icons text-sm">download</span>
+              Download Excel Template
+            </button>
+          </div>
+          <!-- File Picker -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold mb-2 text-gray-700">Select your filled Excel file (.xlsx / .xls)</label>
+            <div class="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center hover:border-indigo-500 transition cursor-pointer bg-indigo-50" onclick="document.getElementById('excelFileInput').click()">
+              <span class="material-icons text-5xl text-indigo-400 block mx-auto mb-2">table_view</span>
+              <p class="text-gray-700 font-semibold" id="filePickerLabel">Click here to select your Excel file</p>
+              <p class="text-xs text-gray-400 mt-1">Supports .xlsx and .xls formats</p>
+              <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelFile(this)">
+            </div>
+          </div>
+          <!-- Preview Table -->
+          <div id="bulkPreviewSection" class="hidden mb-5">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-gray-800 flex items-center gap-2">
+                <span class="material-icons text-indigo-600">preview</span>
+                Preview — <span id="previewCount" class="text-indigo-700 ml-1">0</span>
+              </h4>
+              <span class="text-xs text-gray-500 bg-yellow-50 border border-yellow-200 px-3 py-1 rounded-full">Red rows have errors and will be skipped</span>
+            </div>
+            <div class="overflow-x-auto rounded-xl border-2 border-gray-200" style="max-height:300px;overflow-y:auto;">
+              <table class="w-full text-xs">
+                <thead class="bg-indigo-700 text-white sticky top-0">
+                  <tr>
+                    <th class="p-2">#</th><th class="p-2">Name</th><th class="p-2">Email</th>
+                    <th class="p-2">Reg No</th><th class="p-2">Dept</th><th class="p-2">Yr</th>
+                    <th class="p-2">Sec</th><th class="p-2">Mobile</th><th class="p-2">CGPA</th>
+                    <th class="p-2">Arrears</th><th class="p-2">History</th><th class="p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="bulkPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Upload Actions -->
+          <div id="bulkUploadActions" class="hidden flex gap-3 mb-4">
+            <button onclick="doBulkUpload()" id="doBulkUploadBtn"
+              class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 font-semibold flex items-center gap-2 shadow-lg">
+              <span class="material-icons">cloud_upload</span> Upload All Valid Students
+            </button>
+            <button onclick="closeBulkUpload()" class="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 font-semibold">Cancel</button>
+          </div>
+          <!-- Results -->
+          <div id="bulkUploadResults" class="hidden"></div>
+        </div>
       </div>
     </div>
 
@@ -953,6 +1038,159 @@
         }, 5000);
       };
     }
+
+    // ─── Bulk Upload Module ─────────────────────────────────────────────────
+    let bulkStudentRows = [];
+
+    window.openBulkUpload = function() {
+      document.getElementById('bulkUploadModal').classList.remove('hidden');
+    };
+
+    window.closeBulkUpload = function() {
+      document.getElementById('bulkUploadModal').classList.add('hidden');
+      document.getElementById('excelFileInput').value = '';
+      document.getElementById('filePickerLabel').textContent = 'Click here to select your Excel file';
+      document.getElementById('bulkPreviewSection').classList.add('hidden');
+      document.getElementById('bulkUploadActions').classList.add('hidden');
+      document.getElementById('bulkUploadResults').classList.add('hidden');
+      bulkStudentRows = [];
+    };
+
+    window.downloadStudentTemplate = function() {
+      const XLSX = window.XLSX;
+      if (!XLSX) { alert('Excel library not loaded. Please refresh the page.'); return; }
+      const headers = [
+        'Name *', 'Email *', 'Password *', 'Register Number *',
+        'Department *', 'Year (1-5) *', 'Section *', 'Mobile Number *',
+        'CGPA *', 'Current Arrears *', 'History of Arrears (Yes/No) *'
+      ];
+      const sample = ['John Doe', 'john@college.edu', 'pass@123', '2021CSE001', 'CSE', 3, 'A', '9876543210', 8.5, 0, 'No'];
+      const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+      ws['!cols'] = headers.map(h => ({ wch: Math.max(h.length + 2, 22) }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Students');
+      XLSX.writeFile(wb, 'student_upload_template.xlsx');
+    };
+
+    window.handleExcelFile = function(input) {
+      const file = input.files[0];
+      if (!file) return;
+      document.getElementById('filePickerLabel').textContent = file.name;
+      const XLSX = window.XLSX;
+      if (!XLSX) { alert('Excel library not loaded. Please refresh the page.'); return; }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (rows.length < 2) {
+          alert('No student data found. Please use the downloaded template and add at least one student row.');
+          return;
+        }
+        bulkStudentRows = [];
+        let previewHtml = '';
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r[0] && !r[1] && !r[2]) continue; // skip blank rows
+          const name            = String(r[0] || '').trim();
+          const email           = String(r[1] || '').trim().toLowerCase();
+          const password        = String(r[2] || '').trim();
+          const reg_no          = String(r[3] || '').trim();
+          const dept            = String(r[4] || '').trim();
+          const year            = parseInt(r[5]) || 0;
+          const section         = String(r[6] || '').trim();
+          const mobile_number   = String(r[7] || '').trim();
+          const cgpa            = parseFloat(r[8]) || 0;
+          const no_of_arrears   = parseInt(r[9]) || 0;
+          const historyRaw      = String(r[10] || '').trim().toLowerCase();
+          const history_of_arrears = historyRaw === 'yes' || historyRaw === 'true';
+
+          const errors = [];
+          if (!name)                                                errors.push('Name');
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Email');
+          if (!password || password.length < 4)                    errors.push('Password(min 4)');
+          if (!reg_no)                                              errors.push('Reg No');
+          if (!dept)                                                errors.push('Department');
+          if (year < 1 || year > 5)                                 errors.push('Year(1-5)');
+          if (!section)                                             errors.push('Section');
+          if (!mobile_number || mobile_number.length < 10)          errors.push('Mobile(10 digits)');
+
+          const isValid = errors.length === 0;
+          const statusBadge = isValid
+            ? '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">✔ Valid</span>'
+            : `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold" title="Fix: ${errors.join(', ')}">✘ ${errors.join(', ')}</span>`;
+
+          bulkStudentRows.push({ name, email, password, reg_no, dept, year, section, mobile_number, cgpa, no_of_arrears, history_of_arrears, isValid });
+
+          previewHtml += `<tr class="${isValid ? 'hover:bg-gray-50' : 'bg-red-50'}">
+            <td class="p-2 text-center text-gray-400">${i}</td>
+            <td class="p-2 font-semibold">${name || '—'}</td>
+            <td class="p-2 text-gray-600">${email || '—'}</td>
+            <td class="p-2">${reg_no || '—'}</td>
+            <td class="p-2">${dept || '—'}</td>
+            <td class="p-2 text-center">${year || '—'}</td>
+            <td class="p-2 text-center">${section || '—'}</td>
+            <td class="p-2">${mobile_number || '—'}</td>
+            <td class="p-2 text-center">${cgpa}</td>
+            <td class="p-2 text-center">${no_of_arrears}</td>
+            <td class="p-2 text-center">${history_of_arrears ? 'Yes' : 'No'}</td>
+            <td class="p-2">${statusBadge}</td>
+          </tr>`;
+        }
+        const validCount = bulkStudentRows.filter(s => s.isValid).length;
+        document.getElementById('previewCount').textContent = `${bulkStudentRows.length} parsed · ${validCount} valid`;
+        document.getElementById('bulkPreviewBody').innerHTML = previewHtml || '<tr><td colspan="12" class="p-4 text-center text-gray-500">No data rows found.</td></tr>';
+        document.getElementById('bulkPreviewSection').classList.remove('hidden');
+        document.getElementById('bulkUploadActions').classList.remove('hidden');
+        document.getElementById('bulkUploadResults').classList.add('hidden');
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    window.doBulkUpload = async function() {
+      const validRows = bulkStudentRows.filter(s => s.isValid);
+      if (validRows.length === 0) {
+        alert('No valid rows to upload. Please fix the errors highlighted in red.');
+        return;
+      }
+      const btn = document.getElementById('doBulkUploadBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-icons">hourglass_top</span> Uploading...';
+
+      let success = 0, skipped = 0, failed = 0;
+      const failedNames = [];
+      for (const s of validRows) {
+        const { data: existing } = await supabase.from('students').select('id').eq('email', s.email);
+        if (existing && existing.length > 0) { skipped++; continue; }
+        const { error } = await supabase.from('students').insert({
+          name: s.name, email: s.email, password: s.password,
+          reg_no: s.reg_no, dept: s.dept, year: s.year,
+          section: s.section, mobile_number: s.mobile_number,
+          cgpa: s.cgpa, no_of_arrears: s.no_of_arrears,
+          history_of_arrears: s.history_of_arrears
+        });
+        if (error) { failed++; failedNames.push(s.name); }
+        else success++;
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons">cloud_upload</span> Upload All Valid Students';
+
+      const skippedInFile = bulkStudentRows.length - validRows.length;
+      const resultsEl = document.getElementById('bulkUploadResults');
+      resultsEl.classList.remove('hidden');
+      resultsEl.innerHTML = `
+        <div class="rounded-xl border p-4 space-y-2 ${success > 0 ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}">
+          <p class="font-bold text-gray-800 flex items-center gap-2"><span class="material-icons">summarize</span> Upload Summary</p>
+          <p class="text-sm ${success > 0 ? 'text-green-700' : 'text-gray-600'}">✅ <strong>${success}</strong> student(s) added successfully</p>
+          ${skipped     ? `<p class="text-sm text-yellow-700">⚠️ <strong>${skipped}</strong> skipped — email already exists in system</p>` : ''}
+          ${failed      ? `<p class="text-sm text-red-700">❌ <strong>${failed}</strong> failed to insert: ${failedNames.join(', ')}</p>` : ''}
+          ${skippedInFile ? `<p class="text-sm text-gray-500">📋 <strong>${skippedInFile}</strong> row(s) had validation errors and were not attempted</p>` : ''}
+        </div>`;
+      if (success > 0) setTimeout(() => loadStudents(), 600);
+    };
+    // ─── End Bulk Upload Module ──────────────────────────────────────────────
 
     // Initial load
     loadStudents();
