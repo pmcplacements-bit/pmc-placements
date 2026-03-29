@@ -457,6 +457,36 @@
       </div>
       
       <form id="editProfileForm" class="p-6">
+        <!-- Academic Info Section -->
+        <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <h4 class="font-bold text-blue-900 mb-3 flex items-center gap-2"><span class="material-icons text-lg">school</span>Academic Information</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Section</label>
+              <input type="text" id="editSection" maxlength="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="e.g., A, B, C">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Mobile Number</label>
+              <input type="tel" id="editMobile" maxlength="15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="10-digit mobile number">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">CGPA</label>
+              <input type="number" id="editCGPA" step="0.01" min="0" max="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="e.g., 8.5">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Current Arrears</label>
+              <input type="number" id="editCurrentArrears" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="Number of current arrears">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">History of Arrears</label>
+              <select id="editHistoryArrears" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Passport Available</label>
@@ -924,7 +954,7 @@
           else if (['csv'].includes(fileExt)) { icon = 'grid_on'; iconColor = 'text-teal-600'; }
           
           // Get public URL
-          const { data: urlData } = window.supabaseClient.storage.from('Files').getPublicUrl(resource.storage_path);
+          const { data: urlData } = window.supabaseClient.storage.from('Student Bucket').getPublicUrl(resource.storage_path);
           const fileUrl = urlData.publicUrl;
           
           const uploadDate = new Date(resource.uploaded_at).toLocaleDateString();
@@ -973,6 +1003,13 @@
     window.editPlacementProfile = () => {
       const student = window.currentStudent;
       if (!student) return;
+      
+      // Populate academic fields
+      document.getElementById('editSection').value = student.section || '';
+      document.getElementById('editMobile').value = student.mobile_number || '';
+      document.getElementById('editCGPA').value = student.cgpa || '';
+      document.getElementById('editCurrentArrears').value = student.no_of_arrears ?? '';
+      document.getElementById('editHistoryArrears').value = student.history_of_arrears ? 'true' : 'false';
       
       // Populate form with current data
       document.getElementById('editPassport').value = student.passport_available ? 'true' : 'false';
@@ -1050,6 +1087,11 @@
         
         const student = window.currentStudent;
         const updates = {
+          section: document.getElementById('editSection').value.trim(),
+          mobile_number: document.getElementById('editMobile').value.trim(),
+          cgpa: parseFloat(document.getElementById('editCGPA').value) || null,
+          no_of_arrears: parseInt(document.getElementById('editCurrentArrears').value) || 0,
+          history_of_arrears: document.getElementById('editHistoryArrears').value === 'true',
           passport_available: document.getElementById('editPassport').value === 'true',
           aadhar_number: document.getElementById('editAadhar').value,
           my_strength: document.getElementById('editStrength').value,
@@ -1160,6 +1202,9 @@
         }
         
         document.getElementById('editProfileMsg').innerHTML = '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"><span class="material-icons">check_circle</span>Profile updated successfully!</div>';
+        
+        // Update currentStudent in memory
+        Object.assign(window.currentStudent, updates);
         
         setTimeout(() => {
           closeEditProfileModal();

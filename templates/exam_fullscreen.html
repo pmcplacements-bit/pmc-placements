@@ -283,6 +283,26 @@
         
         questions = qs || [];
 
+        // Shuffle question order if any question has randomize=true
+        if (questions.some(q => q.randomize)) {
+          for (let i = questions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [questions[i], questions[j]] = [questions[j], questions[i]];
+          }
+        }
+        // Shuffle options once at load time for questions with shuffle_options=true
+        questions.forEach(q => {
+          if (q.shuffle_options && q.options) {
+            let opts;
+            try { opts = Array.isArray(q.options) ? [...q.options] : JSON.parse(q.options || '[]'); } catch(e) { return; }
+            for (let i = opts.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [opts[i], opts[j]] = [opts[j], opts[i]];
+            }
+            q.options = opts;
+          }
+        });
+
         if (questions.length === 0) {
           throw new Error('No questions found for this exam');
         }
@@ -410,6 +430,7 @@
           </button>
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-6">${q.question_text || 'Question text not available'}</h3>
+        ${q.image ? `<img src="${q.image.startsWith('http') ? q.image : 'https://kflhmnyikwaznzkgeini.supabase.co/storage/v1/object/public/question-images/' + q.image.replace(/^\/+/, '')}" class="max-w-full max-h-64 rounded-xl border border-gray-200 my-4 object-contain cursor-zoom-in" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'16rem':'none'" onerror="this.style.display='none'">` : ''}
         <div class="space-y-3">`;
       
       // Render based on question type
@@ -789,122 +810,87 @@
       showLoadingPopup('Submitting your exam...');
       
       try {
-        // Calculate score (only for auto-gradable questions)
+        // Calculate score using question points + negative marking
         let score = 0;
+        let totalPoints = 0;
         let autoGradableCount = 0;
         
         console.log('=== SCORING DEBUG ===');
-        console.log('Total questions:', questions.length);
-        console.log('Answers object:', answers);
-        console.log('Full questions data:', questions);
-        
-        // Check if correct_answer field exists
-        const hasCorrectAnswer = questions.some(q => q.correct_answer !== undefined && q.correct_answer !== null);
-        console.log('Questions have correct_answer field?', hasCorrectAnswer);
-        
-        // Show all possible answer field names
-        if (questions.length > 0) {
-          console.log('Sample question fields:', Object.keys(questions[0]));
-        }
-        
+
         questions.forEach(q => {
-          console.log(`\nQuestion ${q.id}:`, {
-            type: q.type,
-            correct_answer: q.correct_answer,
-            answer: q.answer,
-            correct_option: q.correct_option,
-            student_answer: answers[q.id],
-            question_text: q.question_text,
-            all_fields: Object.keys(q)
-          });
-          
+          const qPoints = parseFloat(q.points) || 1;
+          const negMark = parseFloat(q.negative_mark) || 0;
+          // negative_mark may be stored as negative (e.g. -0.25) or positive (0.25)
+          const actualNeg = negMark < 0 ? negMark : -Math.abs(negMark);
+
+          console.log(`Q[${q.id}] type=${q.type} points=${qPoints} neg=${actualNeg} student=${JSON.stringify(answers[q.id])} correct=${q.correct_answer || q.expected_answer}`);
+
           if (q.type === 'mcq') {
             autoGradableCount++;
-            const studentAnswer = answers[q.id];
-            const correctAnswer = q.correct_answer;
-            
-            console.log(`MCQ - Student: "${studentAnswer}" (${typeof studentAnswer}), Correct: "${correctAnswer}" (${typeof correctAnswer})`);
-            
-            // Convert both to strings and trim for comparison
-            const studentAns = String(studentAnswer || '').trim().toUpperCase();
-            const correctAns = String(correctAnswer || '').trim().toUpperCase();
-            
-            if (studentAns === correctAns) {
-              score++;
-              console.log('✓ CORRECT!');
+            totalPoints += qPoints;
+            const studentAns = String(answers[q.id] || '').trim();
+            const correctAns = String(q.correct_answer || '').trim();
+            if (studentAns && studentAns.toLowerCase() === correctAns.toLowerCase()) {
+              score += qPoints;
+              console.log('  ✓ CORRECT +' + qPoints);
+            } else if (studentAns && actualNeg !== 0) {
+              score += actualNeg;
+              console.log('  ✗ WRONG ' + actualNeg);
             } else {
-              console.log('✗ WRONG');
+              console.log('  ✗ WRONG (no negative mark)');
             }
           } else if (q.type === 'true_false') {
             autoGradableCount++;
-            const studentAnswer = answers[q.id];
-            const correctAnswer = q.correct_answer || q.expected_answer;
-            
-            console.log(`True/False - Student: "${studentAnswer}", Correct: "${correctAnswer}"`);
-            
-            if (studentAnswer && correctAnswer && studentAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
-              score++;
-              console.log('✓ CORRECT!');
-            } else {
-              console.log('✗ WRONG');
-            }
+            totalPoints += qPoints;
+            const studentAns = (answers[q.id] || '').toLowerCase();
+            const correctAns = (q.correct_answer || q.expected_answer || '').toLowerCase();
+            if (studentAns && correctAns && studentAns === correctAns) {
+              score += qPoints;
+              console.log('  ✓ CORRECT +' + qPoints);
+            } else { console.log('  ✗ WRONG'); }
           } else if (q.type === 'short_answer' && (q.expected_answer || q.correct_answer)) {
             autoGradableCount++;
+            totalPoints += qPoints;
             const studentAns = (answers[q.id] || '').trim();
             const correctAns = (q.expected_answer || q.correct_answer || '').trim();
-            
-            console.log(`Short Answer - Student: "${studentAns}", Correct: "${correctAns}"`);
-            
-            if (q.case_sensitive) {
-              if (studentAns === correctAns) {
-                score++;
-                console.log('✓ CORRECT!');
-              } else {
-                console.log('✗ WRONG');
-              }
-            } else {
-              if (studentAns.toLowerCase() === correctAns.toLowerCase()) {
-                score++;
-                console.log('✓ CORRECT!');
-              } else {
-                console.log('✗ WRONG');
-              }
-            }
+            const match = q.case_sensitive ? studentAns === correctAns : studentAns.toLowerCase() === correctAns.toLowerCase();
+            if (match) { score += qPoints; console.log('  ✓ CORRECT +' + qPoints); }
+            else { console.log('  ✗ WRONG'); }
           } else if (q.type === 'fill_blank' && (q.expected_answer || q.correct_answer)) {
             autoGradableCount++;
+            totalPoints += qPoints;
             const studentAns = (answers[q.id] || '').trim().toLowerCase();
             const correctAns = (q.expected_answer || q.correct_answer || '').trim().toLowerCase();
-            
-            console.log(`Fill Blank - Student: "${studentAns}", Correct: "${correctAns}"`);
-            
-            if (studentAns === correctAns) {
-              score++;
-              console.log('✓ CORRECT!');
-            } else {
-              console.log('✗ WRONG');
-            }
+            if (studentAns === correctAns) { score += qPoints; console.log('  ✓ CORRECT +' + qPoints); }
+            else { console.log('  ✗ WRONG'); }
+          } else if (q.type === 'matching' && q.matching_pairs) {
+            autoGradableCount++;
+            totalPoints += qPoints;
+            try {
+              const correctPairs = typeof q.matching_pairs === 'string' ? JSON.parse(q.matching_pairs) : q.matching_pairs;
+              const studentAnswers = answers[q.id] || {};
+              const allCorrect = correctPairs.length > 0 && correctPairs.every(p => studentAnswers[p.left] === p.right);
+              if (allCorrect) { score += qPoints; console.log('  ✓ CORRECT +' + qPoints); }
+              else { console.log('  ✗ WRONG matching'); }
+            } catch(e) { console.log('  ✗ Matching parse error:', e); }
           }
-          // Essay, coding, and matching require manual grading
+          // essay, matching, coding → manual grading (totalPoints not added)
         });
-        
-        console.log('\n=== SCORING SUMMARY ===');
-        console.log('Auto-gradable questions:', autoGradableCount);
-        console.log('Correct answers:', score);
-        console.log('Score percentage:', autoGradableCount > 0 ? ((score / autoGradableCount) * 100).toFixed(2) : 0);
-        
-        const percentage = autoGradableCount > 0 ? ((score / autoGradableCount) * 100).toFixed(2) : 0;
-        
-        // Show a debug alert with scoring details
-        const debugMsg = `SCORING DEBUG:\n\nTotal Questions: ${questions.length}\nAuto-gradable: ${autoGradableCount}\nCorrect Answers: ${score}\nScore: ${percentage}%\n\nAnswers saved: ${Object.keys(answers).length}\n\nCheck console (F12) for detailed breakdown!`;
-        console.log(debugMsg);
+
+        // Clamp score to 0 minimum
+        score = Math.max(0, score);
+
+        console.log(`\n=== SUMMARY: score=${score} totalPoints=${totalPoints} autoGradable=${autoGradableCount} ===`);
+
+        const percentage = totalPoints > 0 ? ((score / totalPoints) * 100).toFixed(1) : 0;
         
         // Prepare submission data
         const submissionData = {
           student_id: studentId,
           exam_id: currentExam.id,
           answers: JSON.stringify(answers),
-          score: parseInt(score),
-          total: parseInt(questions.length),
+          score: Math.round(score * 100) / 100,
+          total: parseInt(totalPoints) || questions.length,
           percentage: parseFloat(percentage),
           submitted_at: new Date().toISOString(),
           auto_submitted: Boolean(autoSubmit),
@@ -946,8 +932,8 @@
             </div>
             <h2 class="text-3xl font-bold mb-4 text-gray-800">Exam Submitted!</h2>
             <div class="bg-gray-100 rounded-xl p-6 mb-6">
-              <div class="text-4xl font-bold text-blue-600 mb-2">${score}/${autoGradableCount > 0 ? autoGradableCount : questions.length}</div>
-              <div class="text-gray-600 mb-2">Auto-graded Score: ${percentage}%</div>
+              <div class="text-4xl font-bold text-blue-600 mb-2">${score % 1 === 0 ? score : score.toFixed(1)} / ${totalPoints > 0 ? totalPoints : questions.length}</div>
+              <div class="text-gray-600 mb-2">Score: ${percentage}%</div>
               ${autoGradableCount < questions.length ? `<div class="text-sm text-yellow-600 mb-1">⏳ ${questions.length - autoGradableCount} question(s) pending manual grading</div>` : ''}
               <div class="text-sm text-gray-500">${autoSubmit ? '⚠️ Auto-submitted due to violations' : '✅ Successfully submitted'}</div>
             </div>

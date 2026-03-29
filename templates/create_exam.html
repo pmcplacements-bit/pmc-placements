@@ -278,7 +278,11 @@
             
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold mb-2">Question Image (Optional)</label>
-              <input type="file" id="questionImage" accept="image/*" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
+              <input type="file" id="questionImage" accept="image/*" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500" onchange="previewQuestionImage(this)">
+              <div id="questionImagePreview" class="mt-2 hidden">
+                <img id="questionImagePreviewImg" class="max-h-48 rounded border border-gray-300" alt="Image preview">
+                <button type="button" onclick="clearImagePreview()" class="mt-1 text-red-500 text-sm hover:text-red-700 block">✕ Remove image</button>
+              </div>
             </div>
             
             <div class="md:col-span-2 space-y-2">
@@ -305,45 +309,90 @@
 
         <!-- Tab Content: Bulk Upload -->
         <div id="contentBulk" class="tab-content hidden">
-          <div class="mb-6">
-            <h3 class="font-semibold mb-4 text-lg">Choose Upload Method:</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- CSV Upload -->
-              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-fuchsia-400 transition">
-                <h4 class="font-semibold mb-2 flex items-center">📊 CSV File</h4>
-                <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-3 text-sm">
-                  <p class="font-semibold mb-1">Format:</p>
-                  <code class="text-xs">question_text, option1, option2, option3, option4, correct_answer, negative_mark, difficulty, tags</code>
-                </div>
-                <form id="bulkUploadForm" class="space-y-3">
-                  <input type="file" id="bulkCSV" accept=".csv" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
-                  <button type="submit" class="w-full bg-gradient-to-r from-fuchsia-900 text-white py-2 rounded-lg hover:bg-fuchsia-700 font-semibold">📤 Upload CSV</button>
-                </form>
-                <div id="bulkMsg" class="text-green-600 mt-2 text-sm font-semibold"></div>
-                <div id="bulkError" class="text-red-500 mt-2 text-sm font-semibold"></div>
-              </div>
+          <div class="mb-6 space-y-6">
 
-              <!-- Word Document Upload -->
-              <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-fuchsia-400 transition">
-                <h4 class="font-semibold mb-2 flex items-center">📄 Word Document</h4>
-                <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-3 text-sm">
-                  <p class="font-semibold mb-1">Format Example:</p>
-                  <code class="text-xs block">
-                    1. What is 2+2?<br>
-                    A) 3<br>
-                    B) 4 [CORRECT]<br>
-                    C) 5<br>
-                    D) 6
-                  </code>
-                </div>
-                <form id="wordUploadForm" class="space-y-3">
-                  <input type="file" id="wordDocFile" accept=".docx" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
-                  <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">📤 Upload Word Doc</button>
-                </form>
-                <div id="wordMsg" class="text-green-600 mt-2 text-sm font-semibold"></div>
-                <div id="wordError" class="text-red-500 mt-2 text-sm font-semibold"></div>
+            <!-- CSV Bulk Upload -->
+            <div class="border-2 border-gray-200 rounded-xl p-5 hover:border-fuchsia-400 transition">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-semibold text-lg">📊 CSV Bulk Upload</h4>
+                <button type="button" onclick="downloadCSVTemplate()" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm font-semibold">⬇ Download Template</button>
               </div>
+              <div class="bg-fuchsia-50 border border-fuchsia-200 rounded p-3 mb-4 text-sm">
+                <p class="font-semibold mb-1">CSV Columns (with header row):</p>
+                <code class="text-xs block">question_text, option1, option2, option3, option4, correct_answer, negative_mark, difficulty, tags, points</code>
+                <p class="mt-2 text-gray-600 text-xs">Correct answer must exactly match one of the 4 options. First row is the header and will be skipped. Save as UTF-8 CSV.</p>
+              </div>
+              <div class="space-y-3">
+                <input type="file" id="bulkCSV" accept=".csv" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
+                <button type="button" onclick="parseCSVPreview()" class="w-full text-white py-2 rounded-lg font-semibold" style="background-color:#7c3aed;">🔍 Parse &amp; Preview CSV</button>
+              </div>
+              <div id="csvPreviewArea" class="hidden mt-4">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="font-semibold text-gray-700" id="csvPreviewCount"></span>
+                  <button type="button" onclick="uploadCSVQuestions()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-semibold">✅ Upload All Valid</button>
+                </div>
+                <div class="overflow-auto max-h-80 border rounded-lg">
+                  <table class="w-full text-xs">
+                    <thead class="sticky top-0 text-white" style="background-color:#6d28d9;">
+                      <tr>
+                        <th class="px-2 py-2 text-left">#</th>
+                        <th class="px-2 py-2 text-left">Question</th>
+                        <th class="px-2 py-2 text-left">Options (✓=Correct)</th>
+                        <th class="px-2 py-2 text-left">Correct Ans</th>
+                        <th class="px-2 py-2 text-left">Pts</th>
+                        <th class="px-2 py-2 text-left">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="csvPreviewBody"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div id="bulkMsg" class="text-green-600 mt-3 text-sm font-semibold"></div>
+              <div id="bulkError" class="text-red-500 mt-2 text-sm font-semibold"></div>
             </div>
+
+            <!-- Word Document Upload -->
+            <div class="border-2 border-gray-200 rounded-xl p-5 hover:border-purple-400 transition">
+              <h4 class="font-semibold text-lg mb-3">📄 Word Document (.docx) Upload</h4>
+              <div class="bg-purple-50 border border-purple-200 rounded p-3 mb-4 text-sm">
+                <p class="font-semibold mb-2">Supported Format Examples:</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <code class="block bg-white p-2 rounded text-xs">Q1. What is 2+2?<br>A) 3<br>B) 4 [CORRECT]<br>C) 5<br>D) 6<br>Difficulty: Easy<br>Tags: math<br>Negative: -0.25</code>
+                  <code class="block bg-white p-2 rounded text-xs">Question: Capital of France?<br>Option1: London<br>Option2: Paris<br>Option3: Berlin<br>Option4: Madrid<br>Correct: Option2<br>Difficulty: Easy</code>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <input type="file" id="wordDocFile" accept=".docx" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
+                <button type="button" onclick="parseWordPreview()" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">🔍 Parse &amp; Preview Word Doc</button>
+              </div>
+              <div id="wordPreviewArea" class="hidden mt-4">
+                <div id="wordInvalidArea" class="hidden mb-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                  <p class="font-semibold text-red-700 mb-2">❌ Skipped (invalid/incomplete):</p>
+                  <div id="wordInvalidList" class="text-xs text-red-600"></div>
+                </div>
+                <div class="flex items-center justify-between mb-3">
+                  <span class="font-semibold text-gray-700" id="wordPreviewCount"></span>
+                  <button type="button" onclick="uploadWordQuestions()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-semibold">✅ Upload Valid Questions</button>
+                </div>
+                <div class="overflow-auto max-h-80 border rounded-lg">
+                  <table class="w-full text-xs">
+                    <thead class="sticky top-0 text-white" style="background-color:#7c3aed;">
+                      <tr>
+                        <th class="px-2 py-2 text-left">#</th>
+                        <th class="px-2 py-2 text-left">Question</th>
+                        <th class="px-2 py-2 text-left">Options (✓=Correct)</th>
+                        <th class="px-2 py-2 text-left">Correct Answer</th>
+                        <th class="px-2 py-2 text-left">Difficulty / Tags</th>
+                      </tr>
+                    </thead>
+                    <tbody id="wordPreviewBody"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div id="wordMsg" class="text-green-600 mt-3 text-sm font-semibold"></div>
+              <div id="wordError" class="text-red-500 mt-2 text-sm font-semibold"></div>
+            </div>
+
           </div>
         </div>
 
@@ -384,17 +433,17 @@
             </div>
           </div>
           
-          <form id="wordUploadForm" class="space-y-4">
+          <form id="wordFullUploadForm" class="space-y-4">
             <div>
               <label class="block text-sm font-semibold mb-2">Upload Word Document (.docx)</label>
               <input type="file" id="wordFile" accept=".docx,.doc" class="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-fuchsia-500">
             </div>
-            <button type="submit" class="w-full bg-gradient-to-r from-fuchsia-900 text-white py-3 rounded-lg hover:bg-fuchsia-700 font-semibold">📤 Parse & Upload Questions</button>
+            <button type="submit" class="w-full text-white py-3 rounded-lg font-semibold" style="background-image:linear-gradient(90deg,#4a044e,#920a6d);">📤 Parse &amp; Upload Questions</button>
           </form>
           
-          <div id="wordMsg" class="text-green-600 mt-4 font-semibold"></div>
-          <div id="wordError" class="text-red-500 mt-4 font-semibold"></div>
-          <div id="wordPreview" class="mt-6"></div>
+          <div id="wordFullMsg" class="text-green-600 mt-4 font-semibold"></div>
+          <div id="wordFullError" class="text-red-500 mt-4 font-semibold"></div>
+          <div id="wordFullPreview" class="mt-6"></div>
         </div>
       </div>
 
@@ -418,6 +467,7 @@
     let currentSection = { title: '', desc: '' };
     let testCasesData = [];
     let matchingPairsData = [];
+    let editingQuestionId = null; // null = add mode, id = edit mode
 
     // Question type switching
     window.switchQuestionType = function() {
@@ -657,146 +707,208 @@
       this.reset();
     };
 
-    // Word document upload
-    document.getElementById('wordUploadForm').addEventListener('submit', async (e) => {
+    // contentWord tab: direct word upload (with preview after insert)
+    document.getElementById('wordFullUploadForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!currentExamId) {
-        document.getElementById('wordError').textContent = '❌ Create an exam first.';
-        return;
-      }
-      
+      if (!currentExamId) { document.getElementById('wordFullError').textContent = '❌ Create an exam first.'; return; }
       const fileInput = document.getElementById('wordFile');
-      if (!fileInput.files.length) {
-        document.getElementById('wordError').textContent = '❌ Please select a Word document.';
-        return;
-      }
-      
+      if (!fileInput.files.length) { document.getElementById('wordFullError').textContent = '❌ Please select a Word document.'; return; }
       const file = fileInput.files[0];
       const formData = new FormData();
       formData.append('file', file);
       formData.append('exam_id', currentExamId);
       formData.append('section', currentSection.title || '');
-      
+      document.getElementById('wordFullMsg').textContent = '⏳ Uploading...';
+      document.getElementById('wordFullError').textContent = '';
+      try {
+        const response = await fetch('/api/upload_word_questions', { method: 'POST', body: formData });
+        const result = await response.json();
+        if (result.error) {
+          document.getElementById('wordFullError').textContent = '❌ ' + result.error;
+          document.getElementById('wordFullMsg').textContent = '';
+        } else {
+          document.getElementById('wordFullMsg').textContent = `✓ ${result.success} questions uploaded!`;
+          if (result.failed > 0) document.getElementById('wordFullError').textContent = `⚠️ ${result.failed} questions failed to parse.`;
+          fileInput.value = '';
+          loadQuestions();
+          if (result.preview && result.preview.length > 0) {
+            let ph = '<div class="bg-gray-50 p-4 rounded-lg mt-4"><h4 class="font-semibold mb-3">Uploaded Questions (first 3):</h4><div class="space-y-2">';
+            result.preview.forEach((q, i) => { ph += `<div class="bg-white p-3 rounded border text-sm"><strong>Q${i+1}:</strong> ${q.question_text}</div>`; });
+            ph += '</div></div>';
+            document.getElementById('wordFullPreview').innerHTML = ph;
+          }
+        }
+      } catch (error) {
+        document.getElementById('wordFullError').textContent = '❌ Error: ' + error.message;
+        document.getElementById('wordFullMsg').textContent = '';
+      }
+    });
+
+    // CSV Download Template
+    window.downloadCSVTemplate = function() {
+      const header = 'question_text,option1,option2,option3,option4,correct_answer,negative_mark,difficulty,tags,points';
+      const sample1 = 'What is 2+2?,1,2,3,4,4,,-0.25,Easy,math,10';
+      const sample2 = 'Capital of France?,Paris,London,Berlin,Madrid,Paris,,-0.25,Easy,geography,10';
+      const csv = header + '\n' + sample1 + '\n' + sample2;
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'question_template.csv'; a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // CSV Parse & Preview
+    let csvParsedRows = [];
+    window.parseCSVPreview = function() {
+      if (!currentExamId) { document.getElementById('bulkError').textContent = '❌ Create an exam first.'; return; }
+      const fileInput = document.getElementById('bulkCSV');
+      if (!fileInput.files.length) { document.getElementById('bulkError').textContent = '❌ Select a CSV file first.'; return; }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        document.getElementById('bulkMsg').textContent = '';
+        document.getElementById('bulkError').textContent = '';
+        const text = evt.target.result;
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        // Skip header row if it starts with 'question_text'
+        const dataLines = (lines.length > 0 && lines[0].toLowerCase().startsWith('question_text')) ? lines.slice(1) : lines;
+        csvParsedRows = [];
+        let html = '';
+        dataLines.forEach((line, idx) => {
+          const cols = parseCSVLine(line);
+          const [q_text, op1, op2, op3, op4, correct, neg, diff, tags, pts] = cols.map(c => (c || '').trim());
+          let valid = true; const errors = [];
+          if (!q_text) { valid = false; errors.push('Missing question'); }
+          if (!op1 || !op2 || !op3 || !op4) { valid = false; errors.push('Need 4 options'); }
+          if (!correct) { valid = false; errors.push('Missing correct answer'); }
+          else if (![op1, op2, op3, op4].includes(correct)) { valid = false; errors.push('Correct answer ≠ options'); }
+          csvParsedRows.push({ question_text: q_text, option1: op1, option2: op2, option3: op3, option4: op4, correct_answer: correct, negative_mark: neg ? parseFloat(neg) : null, difficulty: diff || null, tags: tags || null, points: parseInt(pts) || 10, valid });
+          const opDisplay = [op1, op2, op3, op4].filter(Boolean).map(o => o === correct ? `<strong class="text-green-700">✓${o}</strong>` : o).join(' | ');
+          html += `<tr class="${valid ? '' : 'bg-red-50'}">
+            <td class="px-2 py-1 border-b">${idx+1}</td>
+            <td class="px-2 py-1 border-b max-w-xs">${(q_text||'').substring(0,70)}${(q_text||'').length>70?'…':''}</td>
+            <td class="px-2 py-1 border-b text-xs">${opDisplay}</td>
+            <td class="px-2 py-1 border-b font-semibold text-green-700">${correct||'-'}</td>
+            <td class="px-2 py-1 border-b">${parseInt(pts)||10}</td>
+            <td class="px-2 py-1 border-b">${valid ? '<span class="text-green-600 font-bold">✓ Valid</span>' : `<span class="text-red-600 font-bold">✗ ${errors.join(', ')}</span>`}</td>
+          </tr>`;
+        });
+        document.getElementById('csvPreviewBody').innerHTML = html;
+        const validCount = csvParsedRows.filter(r => r.valid).length;
+        document.getElementById('csvPreviewCount').textContent = `${validCount} valid of ${csvParsedRows.length} total rows`;
+        document.getElementById('csvPreviewArea').classList.remove('hidden');
+      };
+      reader.readAsText(fileInput.files[0], 'UTF-8');
+    };
+
+    function parseCSVLine(line) {
+      const result = []; let cur = ''; let inQ = false;
+      for (const ch of line) {
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      result.push(cur);
+      return result;
+    }
+
+    // CSV Upload All Valid
+    window.uploadCSVQuestions = async function() {
+      if (!currentExamId) { document.getElementById('bulkError').textContent = '❌ Create an exam first.'; return; }
+      const valid = csvParsedRows.filter(r => r.valid);
+      if (!valid.length) { document.getElementById('bulkError').textContent = '❌ No valid rows to upload.'; return; }
+      document.getElementById('bulkMsg').textContent = `⏳ Uploading ${valid.length} questions...`;
+      document.getElementById('bulkError').textContent = '';
+      let success = 0, fail = 0;
+      for (const row of valid) {
+        const { error } = await supabase.from('questions').insert({
+          exam_id: currentExamId, question_text: row.question_text, type: 'mcq',
+          options: JSON.stringify([row.option1, row.option2, row.option3, row.option4]),
+          correct_answer: row.correct_answer, negative_mark: row.negative_mark,
+          difficulty: row.difficulty, tags: row.tags, points: row.points,
+          section: currentSection.title || null
+        });
+        if (error) fail++; else success++;
+      }
+      document.getElementById('bulkMsg').textContent = `✓ ${success} questions uploaded successfully!`;
+      document.getElementById('bulkError').textContent = fail ? `❌ ${fail} failed to insert.` : '';
+      document.getElementById('csvPreviewArea').classList.add('hidden');
+      csvParsedRows = []; document.getElementById('bulkCSV').value = '';
+      loadQuestions();
+    };
+
+    // Word Parse & Preview (calls /api/parse_word_questions — parse only, no DB insert)
+    let wordParsedQuestions = [];
+    window.parseWordPreview = async function() {
+      if (!currentExamId) { document.getElementById('wordError').textContent = '❌ Create an exam first.'; return; }
+      const fileInput = document.getElementById('wordDocFile');
+      if (!fileInput.files.length) { document.getElementById('wordError').textContent = '❌ Select a .docx file.'; return; }
       document.getElementById('wordMsg').textContent = '⏳ Parsing document...';
       document.getElementById('wordError').textContent = '';
-      
-      try {
-        const response = await fetch('/api/upload_word_questions', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.error) {
-          document.getElementById('wordError').textContent = '❌ ' + result.error;
-          document.getElementById('wordMsg').textContent = '';
-        } else {
-          document.getElementById('wordMsg').textContent = `✓ ${result.success} questions uploaded successfully!`;
-          if (result.failed > 0) {
-            document.getElementById('wordError').textContent = `⚠️ ${result.failed} questions failed to parse.`;
-          }
-          fileInput.value = '';
-          loadQuestions();
-          
-          // Show preview of parsed questions
-          if (result.preview && result.preview.length > 0) {
-            let previewHtml = '<div class="bg-gray-50 p-4 rounded-lg mt-4"><h4 class="font-semibold mb-3">Preview of Parsed Questions:</h4><div class="space-y-2">';
-            result.preview.forEach((q, i) => {
-              previewHtml += `<div class="bg-white p-3 rounded border"><strong>Q${i+1}:</strong> ${q.question_text}</div>`;
-            });
-            previewHtml += '</div></div>';
-            document.getElementById('wordPreview').innerHTML = previewHtml;
-          }
-        }
-      } catch (error) {
-        document.getElementById('wordError').textContent = '❌ Error uploading file: ' + error.message;
-        document.getElementById('wordMsg').textContent = '';
-      }
-    });
-
-    // Bulk upload
-    document.getElementById('bulkUploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!currentExamId) {
-        document.getElementById('bulkError').textContent = '❌ Create an exam first.';
-        return;
-      }
-      const fileInput = document.getElementById('bulkCSV');
-      if (!fileInput.files.length) return;
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        const text = evt.target.result;
-        const rows = text.split('\n').map(r => r.split(','));
-        let success = 0, fail = 0;
-        for (const row of rows) {
-          if (row.length < 6) { fail++; continue; }
-          // CSV: question_text,option1,option2,option3,option4,correct_answer,negative_mark,difficulty,tags
-          const [question_text, option1, option2, option3, option4, correct_answer, negative_mark, difficulty, tags] = row;
-          const options = [option1, option2, option3, option4];
-          const { error } = await supabase.from('questions').insert({
-            exam_id: currentExamId,
-            question_text,
-            type: 'mcq',
-            options: JSON.stringify(options),
-            correct_answer,
-            negative_mark: negative_mark || null,
-            difficulty: difficulty || null,
-            tags: tags || null,
-            section: currentSection.title || null
-          });
-          if (error) fail++; else success++;
-        }
-        document.getElementById('bulkMsg').textContent = `✓ ${success} questions uploaded successfully!`;
-        document.getElementById('bulkError').textContent = fail ? `❌ ${fail} failed.` : '';
-        fileInput.value = '';
-        loadQuestions();
-      };
-      reader.readAsText(file);
-    });
-
-    // Word Document upload
-    document.getElementById('wordUploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!currentExamId) {
-        document.getElementById('wordError').textContent = '❌ Create an exam first.';
-        return;
-      }
-      const fileInput = document.getElementById('wordDocFile');
-      if (!fileInput.files.length) {
-        document.getElementById('wordError').textContent = '❌ Please select a Word document.';
-        return;
-      }
-      
-      const file = fileInput.files[0];
+      document.getElementById('wordPreviewArea').classList.add('hidden');
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('exam_id', currentExamId);
-      if (currentSection.title) formData.append('section', currentSection.title);
-      
+      formData.append('file', fileInput.files[0]);
       try {
-        const response = await fetch('/api/upload_word_questions', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.error) {
-          document.getElementById('wordError').textContent = '❌ ' + result.error;
-          document.getElementById('wordMsg').textContent = '';
-        } else {
-          document.getElementById('wordMsg').textContent = `✓ ${result.success} questions uploaded successfully!`;
-          document.getElementById('wordError').textContent = result.failed ? `⚠️ ${result.failed} questions failed.` : '';
-          fileInput.value = '';
-          loadQuestions();
-        }
-      } catch (error) {
-        document.getElementById('wordError').textContent = '❌ Upload failed: ' + error.message;
+        const r = await fetch('/api/parse_word_questions', { method: 'POST', body: formData });
+        const result = await r.json();
+        if (result.error) { document.getElementById('wordError').textContent = '❌ ' + result.error; document.getElementById('wordMsg').textContent = ''; return; }
+        wordParsedQuestions = result.valid || [];
         document.getElementById('wordMsg').textContent = '';
+        if (result.invalid && result.invalid.length > 0) {
+          document.getElementById('wordInvalidArea').classList.remove('hidden');
+          document.getElementById('wordInvalidList').innerHTML = result.invalid.map(q => `<div>• ${q.question_text}: ${q.reason}</div>`).join('');
+        } else { document.getElementById('wordInvalidArea').classList.add('hidden'); }
+        let html = '';
+        wordParsedQuestions.forEach((q, i) => {
+          const opts = (q.options || []).map(o => o === q.correct_answer ? `<strong class="text-green-700">✓${o}</strong>` : o).join(' | ');
+          html += `<tr class="${i%2===0?'bg-white':'bg-gray-50'}">
+            <td class="px-2 py-1 border-b">${i+1}</td>
+            <td class="px-2 py-1 border-b">${(q.question_text||'').substring(0,70)}</td>
+            <td class="px-2 py-1 border-b text-xs">${opts}</td>
+            <td class="px-2 py-1 border-b font-semibold text-green-700">${q.correct_answer||'-'}</td>
+            <td class="px-2 py-1 border-b text-xs">${q.difficulty||'-'}${q.tags?`<br><span class="text-gray-500">${q.tags}</span>`:''}</td>
+          </tr>`;
+        });
+        document.getElementById('wordPreviewBody').innerHTML = html;
+        document.getElementById('wordPreviewCount').textContent = `${wordParsedQuestions.length} valid question(s) ready`;
+        document.getElementById('wordPreviewArea').classList.remove('hidden');
+      } catch (err) { document.getElementById('wordError').textContent = '❌ Error: ' + err.message; document.getElementById('wordMsg').textContent = ''; }
+    };
+
+    // Word Upload Valid Questions (insert via Supabase client)
+    window.uploadWordQuestions = async function() {
+      if (!currentExamId) { document.getElementById('wordError').textContent = '❌ Create exam first.'; return; }
+      if (!wordParsedQuestions.length) { document.getElementById('wordError').textContent = '❌ No parsed questions.'; return; }
+      document.getElementById('wordMsg').textContent = `⏳ Uploading ${wordParsedQuestions.length} questions...`;
+      let success = 0, fail = 0;
+      for (const q of wordParsedQuestions) {
+        const { error } = await supabase.from('questions').insert({
+          exam_id: currentExamId, question_text: q.question_text, type: 'mcq',
+          options: JSON.stringify(q.options), correct_answer: q.correct_answer,
+          negative_mark: q.negative_mark || null, difficulty: q.difficulty || null,
+          tags: q.tags || null, points: q.points || 10,
+          section: currentSection.title || null
+        });
+        if (error) fail++; else success++;
       }
-    });
+      document.getElementById('wordMsg').textContent = `✓ ${success} questions uploaded!`;
+      document.getElementById('wordError').textContent = fail ? `⚠️ ${fail} failed.` : '';
+      document.getElementById('wordPreviewArea').classList.add('hidden');
+      wordParsedQuestions = []; document.getElementById('wordDocFile').value = '';
+      loadQuestions();
+    };
+
+    // Question Image preview in create form
+    window.previewQuestionImage = function(input) {
+      const file = input.files[0];
+      if (file) {
+        document.getElementById('questionImagePreviewImg').src = URL.createObjectURL(file);
+        document.getElementById('questionImagePreview').classList.remove('hidden');
+      }
+    };
+    window.clearImagePreview = function() {
+      document.getElementById('questionImage').value = '';
+      document.getElementById('questionImagePreview').classList.add('hidden');
+      document.getElementById('questionImagePreviewImg').src = '';
+    };
 
     // Preview question
     document.getElementById('previewBtn').onclick = function() {
@@ -932,16 +1044,25 @@
       }
       
       // Upload question image if present
-      let imageUrl = null;
       const imageInput = document.getElementById('questionImage');
       if (imageInput && imageInput.files.length) {
         const file = imageInput.files[0];
-        const { data, error } = await supabase.storage.from('question-images').upload(`/${Date.now()}_${file.name}`, file);
-        if (!error) insertObj.image = data.path;
+        const filePath = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const { data: imgData, error: imgError } = await supabase.storage.from('Student Bucket').upload(filePath, file);
+        if (imgError) {
+          document.getElementById('questionError').textContent = '❌ Image upload failed: ' + imgError.message;
+          return;
+        }
+        insertObj.image = supabase.storage.from('Student Bucket').getPublicUrl(filePath).data.publicUrl;
       }
       
-      // Insert question
-      const { data: questionData, error } = await supabase.from('questions').insert(insertObj).select();
+      // Insert or Update question
+      let questionData, error;
+      if (editingQuestionId) {
+        ({ data: questionData, error } = await supabase.from('questions').update(insertObj).eq('id', editingQuestionId).select());
+      } else {
+        ({ data: questionData, error } = await supabase.from('questions').insert(insertObj).select());
+      }
       
       if (error) {
         document.getElementById('questionError').textContent = '❌ ' + error.message;
@@ -949,8 +1070,8 @@
         return;
       }
       
-      // If coding question, insert test cases
-      if (questionType === 'coding' && questionData && questionData[0]) {
+      // If coding question, insert test cases (only on new create)
+      if (!editingQuestionId && questionType === 'coding' && questionData && questionData[0]) {
         const questionId = questionData[0].id;
         const validTests = testCasesData.filter(t => t && t.input && t.output);
         
@@ -968,10 +1089,16 @@
         }
       }
       
-      document.getElementById('questionMsg').textContent = '✓ Question added successfully!';
+      document.getElementById('questionMsg').textContent = editingQuestionId ? '✓ Question updated successfully!' : '✓ Question added successfully!';
       document.getElementById('questionError').textContent = '';
       document.getElementById('addQuestionForm').reset();
       document.getElementById('previewPanel').innerHTML = '';
+      document.getElementById('questionImagePreview').classList.add('hidden');
+      
+      // Reset edit mode
+      editingQuestionId = null;
+      const submitBtn = document.querySelector('#addQuestionForm button[type="submit"]');
+      if (submitBtn) { submitBtn.textContent = '✓ Add Question'; submitBtn.classList.replace('bg-yellow-500','bg-green-600'); }
       
       // Reset dynamic arrays
       testCasesData = [];
@@ -988,8 +1115,81 @@
 
     // Edit/Delete
     window.editQuestion = async function(id) {
-      // Fetch and populate form for editing (not implemented for brevity)
-      alert('Edit feature coming soon!');
+      const { data: q, error } = await supabase.from('questions').select('*').eq('id', id).single();
+      if (error || !q) { alert('Failed to load question: ' + (error?.message || 'Not found')); return; }
+
+      // Switch to Single Question tab
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById('contentSingle').classList.remove('hidden');
+      document.querySelector('[onclick="switchTab(\'contentSingle\')"]')?.classList.add('active');
+
+      // Populate common fields
+      document.getElementById('questionType').value = q.type;
+      switchQuestionType();
+      document.getElementById('questionText').value = q.question_text || '';
+      document.getElementById('points').value = q.points || 1;
+      document.getElementById('difficulty').value = q.difficulty || '';
+      document.getElementById('tags').value = q.tags || '';
+      if (q.section) currentSection.title = q.section; // restore section context
+      document.getElementById('negativeMark').value = q.negative_mark || '';
+
+      // Type-specific population
+      if (q.type === 'mcq') {
+        try {
+          const opts = JSON.parse(q.options || '[]');
+          ['option1','option2','option3','option4'].forEach((id, i) => {
+            document.getElementById(id).value = opts[i] || '';
+          });
+          // Set correct answer dropdown
+          const opts2 = opts;
+          const sel = document.getElementById('correctAnswer');
+          for (let i = 0; i < opts2.length; i++) {
+            if (opts2[i] === q.correct_answer) { sel.value = 'option' + (i+1); break; }
+          }
+        } catch(e) {}
+        if (document.getElementById('shuffleOptions')) document.getElementById('shuffleOptions').checked = !!q.shuffle_options;
+        if (document.getElementById('randomizeQuestion')) document.getElementById('randomizeQuestion').checked = !!q.randomize;
+      } else if (q.type === 'true_false') {
+        document.getElementById('trueFalseAnswer').value = q.expected_answer || 'true';
+      } else if (q.type === 'short_answer') {
+        document.getElementById('expectedAnswer').value = q.expected_answer || '';
+        if (document.getElementById('caseSensitive')) document.getElementById('caseSensitive').checked = !!q.case_sensitive;
+      } else if (q.type === 'essay') {
+        document.getElementById('maxWordCount').value = q.max_word_count || '';
+      } else if (q.type === 'fill_blank') {
+        document.getElementById('fillBlankAnswer').value = q.expected_answer || '';
+      } else if (q.type === 'matching') {
+        try {
+          matchingPairsData = JSON.parse(q.matching_pairs || '[]');
+          const list = document.getElementById('matchingPairsList');
+          list.innerHTML = '';
+          matchingPairsData.forEach((p, pairId) => {
+            list.insertAdjacentHTML('beforeend', `<div class="flex gap-2 items-center mb-2">
+              <input type="text" placeholder="Left item" class="flex-1 px-4 py-2 border rounded" value="${p.left}" onchange="updateMatchingPair(${pairId}, 'left', this.value)">
+              <span>↔</span>
+              <input type="text" placeholder="Right item" class="flex-1 px-4 py-2 border rounded" value="${p.right}" onchange="updateMatchingPair(${pairId}, 'right', this.value)">
+              <button type="button" onclick="removeMatchingPair(${pairId})" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600">✕</button>
+            </div>`);
+          });
+        } catch(e) {}
+      }
+
+      // Show existing image preview if any
+      if (q.image) {
+        const imgSrc = q.image.startsWith('http') ? q.image : `https://kflhmnyikwaznzkgeini.supabase.co/storage/v1/object/public/question-images/${q.image.replace(/^\/+/, '')}`;
+        document.getElementById('questionImagePreviewImg').src = imgSrc;
+        document.getElementById('questionImagePreview').classList.remove('hidden');
+      }
+
+      // Set edit mode
+      editingQuestionId = id;
+      const submitBtn = document.querySelector('#addQuestionForm button[type="submit"]');
+      if (submitBtn) { submitBtn.textContent = '✏️ Update Question'; submitBtn.classList.replace('bg-green-600','bg-yellow-500'); }
+      document.getElementById('questionMsg').textContent = '';
+      document.getElementById('questionError').textContent = '';
+      document.getElementById('questionText').focus();
+      document.getElementById('contentSingle').scrollIntoView({ behavior: 'smooth' });
     };
     window.deleteQuestion = async function(id) {
       if (confirm('Delete this question?')) {
@@ -1104,7 +1304,8 @@
         html += '</div>';
         
         if (q.image) {
-          html += `<img src="https://kflhmnyikwaznzkgeini.supabase.co/storage/v1/object/public/question-images/${q.image}" class="mt-3 max-h-48 rounded border">`;
+          const imgSrc = q.image.startsWith('http') ? q.image : `https://kflhmnyikwaznzkgeini.supabase.co/storage/v1/object/public/question-images/${q.image.replace(/^\/+/, '')}`;
+          html += `<img src="${imgSrc}" class="mt-3 max-h-48 rounded border" onerror="this.style.display='none'">`;
         }
         html += '</div>';
       });

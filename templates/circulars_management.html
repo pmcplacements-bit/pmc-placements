@@ -461,13 +461,13 @@
           const fileName = `circular_${Date.now()}.${fileExt}`;
 
           const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
-            .from('Files')
+            .from('Student Bucket')
             .upload(fileName, file);
 
           if (uploadError) throw new Error('File upload failed: ' + uploadError.message);
 
           const { data: urlData } = window.supabaseClient.storage
-            .from('Files')
+            .from('Student Bucket')
             .getPublicUrl(fileName);
 
           circularData.file_url = urlData.publicUrl;

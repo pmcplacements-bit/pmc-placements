@@ -721,6 +721,105 @@ def api_upload_word_questions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/parse_word_questions', methods=['POST'])
+@login_required(role='admin')
+def api_parse_word_questions():
+    """Parse a Word document and return question data WITHOUT inserting to DB.
+    Frontend shows a preview table then calls Supabase directly to confirm upload."""
+    try:
+        import re
+        from docx import Document
+
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+
+        file = request.files['file']
+        doc = Document(file)
+        raw_questions = []
+        current_q = {}
+
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if not text:
+                continue
+
+            if re.match(r'^(Q\d+\.|Question:|\d+[\.\)])', text, re.IGNORECASE):
+                if current_q and 'question_text' in current_q:
+                    raw_questions.append(current_q)
+                current_q = {
+                    'question_text': re.sub(r'^(Q\d+\.|Question:|\d+[\.\)])\s*', '', text, flags=re.IGNORECASE).strip(),
+                    'options': []
+                }
+            elif re.match(r'^[A-D][\)\.]\s*.+', text, re.IGNORECASE):
+                opt_text = re.sub(r'^[A-D][\)\.]\s*', '', text, flags=re.IGNORECASE)
+                is_correct = '[CORRECT]' in opt_text.upper() or '(CORRECT)' in opt_text.upper()
+                opt_text = re.sub(r'\s*[\[\(]CORRECT[\]\)]\s*', '', opt_text, flags=re.IGNORECASE).strip()
+                current_q.setdefault('options', []).append(opt_text)
+                if is_correct:
+                    current_q['correct_answer'] = opt_text
+            elif re.match(r'^Option[1-4]:\s*.+', text, re.IGNORECASE):
+                opt_text = re.sub(r'^Option[1-4]:\s*', '', text, flags=re.IGNORECASE).strip()
+                current_q.setdefault('options', []).append(opt_text)
+            elif re.match(r'^Correct:\s*.+', text, re.IGNORECASE):
+                ref = re.sub(r'^Correct:\s*', '', text, flags=re.IGNORECASE).strip()
+                if 'Option' in ref:
+                    try:
+                        idx = int(re.search(r'\d+', ref).group()) - 1
+                        if 0 <= idx < len(current_q.get('options', [])):
+                            current_q['correct_answer'] = current_q['options'][idx]
+                    except Exception:
+                        current_q['correct_answer'] = ref
+                else:
+                    current_q['correct_answer'] = ref
+            elif re.match(r'^Difficulty:\s*.+', text, re.IGNORECASE):
+                current_q['difficulty'] = re.sub(r'^Difficulty:\s*', '', text, flags=re.IGNORECASE).strip()
+            elif re.match(r'^Tags:\s*.+', text, re.IGNORECASE):
+                current_q['tags'] = re.sub(r'^Tags:\s*', '', text, flags=re.IGNORECASE).strip()
+            elif re.match(r'^Negative:\s*.+', text, re.IGNORECASE):
+                try:
+                    current_q['negative_mark'] = float(re.sub(r'^Negative:\s*', '', text, flags=re.IGNORECASE).strip())
+                except Exception:
+                    pass
+            elif re.match(r'^Points:\s*.+', text, re.IGNORECASE):
+                try:
+                    current_q['points'] = int(re.sub(r'^Points:\s*', '', text, flags=re.IGNORECASE).strip())
+                except Exception:
+                    pass
+
+        if current_q and 'question_text' in current_q:
+            raw_questions.append(current_q)
+
+        valid = []
+        invalid = []
+        for q in raw_questions:
+            opts = q.get('options', [])
+            if 'question_text' not in q or len(opts) < 4 or 'correct_answer' not in q:
+                reason = 'Missing ' + ('' if 'question_text' in q else 'question text') + \
+                         (', options (need 4)' if len(opts) < 4 else '') + \
+                         (', correct answer' if 'correct_answer' not in q else '')
+                invalid.append({'question_text': q.get('question_text', '(unknown)'), 'reason': reason.strip(', ')})
+            else:
+                valid.append({
+                    'question_text': q['question_text'],
+                    'options': opts[:4],
+                    'correct_answer': q['correct_answer'],
+                    'difficulty': q.get('difficulty', ''),
+                    'tags': q.get('tags', ''),
+                    'negative_mark': q.get('negative_mark', None),
+                    'points': q.get('points', 10)
+                })
+
+        return jsonify({
+            'valid': valid,
+            'invalid': invalid,
+            'valid_count': len(valid),
+            'invalid_count': len(invalid)
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/dashboard_stats', methods=['GET'])
 @login_required(role='admin')
 def dashboard_stats():
