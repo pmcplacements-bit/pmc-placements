@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     .stat-card { transition: all 0.3s; }
     .stat-card:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
@@ -23,39 +24,27 @@
       min-width: 270px;
     }
     .pdf-export-mode .pdf-count-card { padding: 14px 20px !important; }
-    .pdf-export-mode .pdf-count-number {
-      font-size: 2.2rem !important;
-      line-height: 1 !important;
-      font-weight: 800 !important;
-    }
-    .pdf-export-mode .pdf-count-label {
-      font-size: 0.95rem !important;
-      font-weight: 700 !important;
-    }
-    @media (max-width: 768px) {
-      .chart-container { height: 250px; }
-    }
-
-     /* Fallback gradient for Tailwind 'from-fuchsia-600 to-fuchsia-800' if utilities aren't available */
-    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 {
-      background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%);
-    }
-    /* Fallback text colors for Tailwind fuchsia utilities */
+    .pdf-export-mode .pdf-count-number { font-size: 2.2rem !important; line-height: 1 !important; font-weight: 800 !important; }
+    .pdf-export-mode .pdf-count-label { font-size: 0.95rem !important; font-weight: 700 !important; }
+    @media (max-width: 768px) { .chart-container { height: 250px; } }
+    nav.bg-gradient-to-r.from-fuchsia-600.to-fuchsia-800 { background-image: linear-gradient(90deg, #b71b95 0%, #770582 100%); }
     .text-fuchsia-600 { color: #b71b95 !important; }
     .hover\:text-fuchsia-800:hover { color: #770582 !important; }
-    /* Dark fuchsia hero gradient fallback */
-    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 {
-      background-image: linear-gradient(90deg, #920a6d 0%, #4a044e  100%);
-    }
-
+    .bg-gradient-to-r.from-fuchsia-900.to-fuchsia-700 { background-image: linear-gradient(90deg, #920a6d 0%, #4a044e 100%); }
     .border-fuchsia-500 { border-color: #b71b95 !important; }
-
     .bg-fuchsia-100 { background-color: #ffd6ed !important; }
-    .text-fuchsia-600 { color: #b71b95 !important; }
+    /* Student modal */
+    #studentModal { transition: opacity .2s; }
+    .student-row { cursor: pointer; }
+    .student-row:hover { background: #fdf4ff; }
+    /* Rank badge */
+    .rank-gold   { background:#FFD700; color:#7a5700; }
+    .rank-silver { background:#C0C0C0; color:#444; }
+    .rank-bronze { background:#cd7f32; color:#fff; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-fuchsia-50 to-fuchsia-50 min-h-screen">
-  <!-- Enhanced Navbar -->
+  <!-- Navbar -->
   <nav class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white shadow-2xl">
     <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
       <div class="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
@@ -71,7 +60,7 @@
         <div class="flex items-center gap-2 md:gap-4 w-full md:w-auto">
           <button id="exportBtn" class="flex-1 md:flex-none bg-green-500 hover:bg-green-600 text-white px-3 md:px-6 py-2 rounded-lg transition flex items-center justify-center gap-2 shadow-lg">
             <span class="material-icons text-sm">download</span>
-            <span class="text-sm md:text-base">Export CSV</span>
+            <span class="text-sm md:text-base">Export All CSV</span>
           </button>
           <a href="{{ url_for('admin_dashboard') }}" class="flex-1 md:flex-none bg-white text-fuchsia-600 px-3 md:px-6 py-2 rounded-lg hover:bg-fuchsia-50 transition flex items-center justify-center gap-2 shadow-lg">
             <span class="material-icons text-sm">dashboard</span>
@@ -83,6 +72,7 @@
   </nav>
 
   <div class="max-w-7xl mx-auto px-4 py-4 md:py-8">
+    <!-- Top toolbar -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 md:mb-6">
       <h2 class="text-xl md:text-3xl font-bold text-gray-800 flex items-center gap-2 md:gap-3">
         <span class="material-icons text-3xl md:text-4xl text-fuchsia-600">analytics</span>
@@ -93,30 +83,71 @@
         <span class="text-sm font-semibold">Refresh</span>
       </button>
     </div>
-    <!-- Search-based Exam Filter -->
+
+    <!-- Global filter bar -->
     <div class="bg-white rounded-xl shadow-md border border-fuchsia-100 p-4 mb-6">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div class="relative flex-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Exam search -->
+        <div class="relative">
           <span class="material-icons absolute left-3 text-fuchsia-400 pointer-events-none" style="top:50%;transform:translateY(-50%)">search</span>
-          <input id="examSearchInput" type="text" placeholder="Search exams by name…"
+          <input id="examSearchInput" type="text" placeholder="Search exams…"
             class="w-full pl-10 pr-4 py-2.5 border-2 border-fuchsia-200 rounded-xl focus:outline-none focus:border-fuchsia-500 text-sm"
             oninput="filterExamCards(this.value)" autocomplete="off">
         </div>
-        <button onclick="clearExamFilter()"
+        <!-- Department filter -->
+        <div class="relative">
+          <span class="material-icons absolute left-3 text-fuchsia-400 pointer-events-none" style="top:50%;transform:translateY(-50%)">school</span>
+          <select id="deptFilter" class="w-full pl-10 pr-4 py-2.5 border-2 border-fuchsia-200 rounded-xl focus:outline-none focus:border-fuchsia-500 text-sm appearance-none bg-white"
+            onchange="onDeptFilterChange()">
+            <option value="">All Departments</option>
+          </select>
+        </div>
+        <!-- Student search -->
+        <div class="relative">
+          <span class="material-icons absolute left-3 text-fuchsia-400 pointer-events-none" style="top:50%;transform:translateY(-50%)">person_search</span>
+          <input id="studentSearchInput" type="text" placeholder="Search student name / roll…"
+            class="w-full pl-10 pr-4 py-2.5 border-2 border-fuchsia-200 rounded-xl focus:outline-none focus:border-fuchsia-500 text-sm"
+            oninput="onStudentSearchChange(this.value)" autocomplete="off">
+          <!-- autocomplete dropdown -->
+          <ul id="studentAutoList" class="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-fuchsia-200 rounded-xl shadow-xl text-sm max-h-48 overflow-y-auto hidden"></ul>
+        </div>
+        <!-- Clear -->
+        <button onclick="clearAllFilters()"
           class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-xl text-sm font-semibold transition">
-          <span class="material-icons text-sm">clear_all</span>
-          Show All
+          <span class="material-icons text-sm">clear_all</span>Show All
         </button>
       </div>
-      <div id="filterChips" class="flex flex-wrap gap-2 mt-3" style="display:none"></div>
-      <div id="filterCount" class="text-xs text-gray-500 mt-1" style="display:none"></div>
+      <div id="filterCount" class="text-xs text-gray-500 mt-2 hidden"></div>
     </div>
 
     <div id="analyticsPanel" class="space-y-4 md:space-y-8"></div>
   </div>
 
+  <!-- ══ Student Detail Modal ══════════════════════════════════════════ -->
+  <div id="studentModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4" onclick="closeStudentModal(event)">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="sticky top-0 bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
+        <div>
+          <h3 id="modalStudentName" class="text-xl font-bold"></h3>
+          <p id="modalStudentMeta" class="text-fuchsia-200 text-xs mt-1"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="modalExcelBtn" onclick="exportStudentExcel()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
+            <span class="material-icons text-sm">table_chart</span>Excel
+          </button>
+          <button id="modalPdfBtn" onclick="exportStudentPDF()" class="bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
+            <span class="material-icons text-sm">picture_as_pdf</span>PDF
+          </button>
+          <button onclick="document.getElementById('studentModal').classList.add('hidden')" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="studentModalBody" class="p-6"></div>
+    </div>
+  </div>
+
   <script>
-    // Initialize Supabase client (check if already exists to avoid redeclaration)
     if (!window.supabaseClient) {
       const { createClient } = window.supabase;
       window.supabaseClient = createClient(
@@ -124,171 +155,386 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmbGhtbnlpa3dhem56a2dlaW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NTQ5MDEsImV4cCI6MjA4MDEzMDkwMX0.nTkrtt4SQEYLq529ccYvnR46L1mbzBzagoVifP2VkWQ'
       );
     }
+
     let chartInstances = [];
+    // Global data cache
+    let allExams = [], allStudents = [], allSubmissions = [];
+    let examQuestionsCache = {}; // examId -> questions[]
+    let examSubmissionsCache = {}; // examId -> submissions[]
+    let currentStudentData = null; // for modal export
 
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
     async function loadAnalytics() {
-      // Destroy existing charts
-      chartInstances.forEach(chart => chart.destroy());
+      chartInstances.forEach(c => c.destroy());
       chartInstances = [];
+      document.getElementById('analyticsPanel').innerHTML =
+        '<div class="flex items-center justify-center py-16 text-fuchsia-600"><span class="material-icons animate-spin text-4xl mr-3">refresh</span><span class="text-xl font-semibold">Loading analytics…</span></div>';
 
-      const { data: exams } = await window.supabaseClient.from('exams').select('id,title');
-      
-      if (!exams || exams.length === 0) {
-        document.getElementById('analyticsPanel').innerHTML = '<div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 md:p-8 text-center"><span class="material-icons text-5xl md:text-6xl text-gray-400 mb-2">bar_chart</span><p class="text-gray-500 text-base md:text-lg">No exam data available</p></div>';
+      // Parallel fetch
+      const [examRes, studentRes, subRes] = await Promise.all([
+        window.supabaseClient.from('exams').select('id,title').order('date', {ascending: false}),
+        window.supabaseClient.from('students').select('id,name,email,dept,section,year,reg_no,cgpa,mobile_number'),
+        window.supabaseClient.from('submissions').select('*')
+      ]);
+
+      allExams       = examRes.data || [];
+      allStudents    = studentRes.data || [];
+      allSubmissions = subRes.data || [];
+
+      // Normalise dept field
+      allStudents = allStudents.map(s => ({ ...s, dept: s.dept || '' }));
+
+      // Populate department dropdown
+      const depts = [...new Set(allStudents.map(s => s.dept).filter(Boolean))].sort();
+      const sel = document.getElementById('deptFilter');
+      sel.innerHTML = '<option value="">All Departments</option>' +
+        depts.map(d => `<option value="${d}">${d}</option>`).join('');
+
+      if (allExams.length === 0) {
+        document.getElementById('analyticsPanel').innerHTML =
+          '<div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center"><span class="material-icons text-6xl text-gray-400 mb-2">bar_chart</span><p class="text-gray-500 text-lg">No exam data available yet.</p></div>';
         return;
       }
-      
+
+      // Fetch questions for all exams in parallel
+      await Promise.all(allExams.map(async exam => {
+        const q = await window.supabaseClient.from('questions').select('id,question_text,type,correct_answer,expected_answer,points').eq('exam_id', exam.id);
+        examQuestionsCache[exam.id] = q.data || [];
+        examSubmissionsCache[exam.id] = allSubmissions.filter(s => s.exam_id === exam.id);
+      }));
+
+      renderExamCards(allExams);
+    }
+
+    function renderExamCards(exams) {
+      chartInstances.forEach(c => c.destroy());
+      chartInstances = [];
+
+      const deptFilter    = (document.getElementById('deptFilter').value || '').toLowerCase();
+      const studentSearch = (document.getElementById('studentSearchInput').value || '').toLowerCase().trim();
+
       let html = '';
       let examIndex = 0;
-      
       for (const exam of exams) {
-        const { data: submissions } = await window.supabaseClient.from('submissions').select('*').eq('exam_id', exam.id);
-        const scores = submissions ? submissions.map(s => parseFloat(s.percentage || s.score || 0)) : [];
-        const avg = scores.length ? (scores.reduce((a,b) => a+b,0)/scores.length).toFixed(1) : 0;
-        const max = scores.length ? Math.max(...scores) : 0;
-        const min = scores.length ? Math.min(...scores) : 0;
-        const passCount = scores.filter(s => s >= 60).length;
-        const failCount = scores.length - passCount;
-        
-        // Calculate distribution
-        const ranges = { '90-100': 0, '75-89': 0, '60-74': 0, '50-59': 0, '0-49': 0 };
-        scores.forEach(s => {
-          if (s >= 90) ranges['90-100']++;
-          else if (s >= 75) ranges['75-89']++;
-          else if (s >= 60) ranges['60-74']++;
-          else if (s >= 50) ranges['50-59']++;
-          else ranges['0-49']++;
-        });
-        
-        html += `<div class="bg-white rounded-xl md:rounded-2xl shadow-2xl overflow-hidden border-t-4 border-fuchsia-500 exam-card" data-exam-id="${exam.id}" data-exam-title="${exam.title.toLowerCase()}">
+        let submissions = examSubmissionsCache[exam.id] || [];
+
+        // Apply dept / student filter to submissions
+        if (deptFilter || studentSearch) {
+          submissions = submissions.filter(sub => {
+            const stu = allStudents.find(s => s.id === sub.student_id || s.id === String(sub.student_id));
+            if (!stu) return false;
+            const deptOk   = !deptFilter   || (stu.dept || '').toLowerCase() === deptFilter;
+            const nameOk   = !studentSearch || (stu.name||'').toLowerCase().includes(studentSearch) || (stu.reg_no||'').toLowerCase().includes(studentSearch);
+            return deptOk && nameOk;
+          });
+        }
+
+        const scores     = submissions.map(s => parseFloat(s.percentage ?? s.score ?? 0));
+        const avg        = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : 0;
+        const maxS       = scores.length ? Math.max(...scores).toFixed(1) : 0;
+        const minS       = scores.length ? Math.min(...scores).toFixed(1) : 0;
+        const passCount  = scores.filter(s => s >= 60).length;
+        const failCount  = scores.length - passCount;
+        const passRate   = scores.length ? ((passCount / scores.length)*100).toFixed(0) : 0;
+        const questions  = examQuestionsCache[exam.id] || [];
+
+        html += `<div class="bg-white rounded-2xl shadow-2xl overflow-hidden border-t-4 border-fuchsia-500 exam-card" data-exam-id="${exam.id}" data-exam-title="${exam.title.toLowerCase()}">
+          <!-- Header -->
           <div class="bg-gradient-to-r from-fuchsia-900 to-fuchsia-700 text-white p-4 md:p-6">
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-              <div class="flex items-center gap-2 md:gap-4">
-                <div class="bg-white bg-opacity-20 rounded-lg md:rounded-xl p-2 md:p-3 animate-pulse">
-                  <span class="material-icons text-3xl md:text-4xl">assessment</span>
+              <div class="flex items-center gap-3">
+                <div class="bg-white bg-opacity-20 rounded-xl p-3">
+                  <span class="material-icons text-4xl">assessment</span>
                 </div>
                 <div>
-                  <h3 class="text-lg md:text-2xl font-bold">${exam.title}</h3>
-                  <p class="text-fuchsia-100 text-xs md:text-sm flex items-center gap-2">
-                    <span class="material-icons text-xs">people</span>
-                    ${scores.length} submissions
+                  <h3 class="text-xl md:text-2xl font-bold">${exam.title}</h3>
+                  <p class="text-fuchsia-200 text-xs mt-1 flex items-center gap-2">
+                    <span class="material-icons text-xs">people</span>${scores.length} submission(s) shown
+                    ${deptFilter ? `<span class="bg-white bg-opacity-20 px-2 py-0.5 rounded-full">${document.getElementById('deptFilter').value}</span>` : ''}
                   </p>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-2 w-full md:w-auto">
-                <div class=\"pdf-actions flex flex-col md:flex-row gap-2\">
+                <div class="pdf-actions flex flex-wrap gap-2">
+                  <button onclick="openLeaderboard('${exam.id}',this)"
+                    class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-md">
+                    <span class="material-icons text-sm">leaderboard</span>Leaderboard
+                  </button>
                   <button onclick="exportExamStudentReport('${exam.id}', this)"
-                    class="bg-green-400 hover:bg-green-500 active:bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-md">
-                    <span class="material-icons text-sm">table_chart</span>
-                    Export Student Report (.xlsx)
+                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-md">
+                    <span class="material-icons text-sm">table_chart</span>Export .xlsx
                   </button>
                   <button onclick="exportExamPDFReport('${exam.id}', this)"
-                    class="bg-fuchsia-600 hover:bg-fuchsia-100 active:bg-fuchsia-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-md">
-                    <span class="material-icons text-sm">description</span>
-                    Export Exam Report (.pdf)
+                    class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-md">
+                    <span class="material-icons text-sm">picture_as_pdf</span>Export PDF
                   </button>
                 </div>
                 <div class="pdf-pass-fail flex gap-2">
-                  <div class="pdf-count-card bg-green-500 bg-opacity-30 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
-                    <div class="pdf-count-number text-xl md:text-2xl font-bold">${passCount}</div>
+                  <div class="pdf-count-card bg-green-500 bg-opacity-30 rounded-lg px-3 py-2 text-center">
+                    <div class="pdf-count-number text-2xl font-extrabold">${passCount}</div>
                     <div class="pdf-count-label text-xs">Passed</div>
                   </div>
-                  <div class="pdf-count-card bg-red-500 bg-opacity-30 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
-                    <div class="pdf-count-number text-xl md:text-2xl font-bold">${failCount}</div>
+                  <div class="pdf-count-card bg-red-500 bg-opacity-30 rounded-lg px-3 py-2 text-center">
+                    <div class="pdf-count-number text-2xl font-extrabold">${failCount}</div>
                     <div class="pdf-count-label text-xs">Failed</div>
+                  </div>
+                  <div class="pdf-count-card bg-blue-500 bg-opacity-30 rounded-lg px-3 py-2 text-center">
+                    <div class="pdf-count-number text-2xl font-extrabold">${passRate}%</div>
+                    <div class="pdf-count-label text-xs">Pass Rate</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div class="p-4 md:p-6">
-            <!-- Summary Stats -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <!-- Summary stats -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
               <div class="bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 rounded-xl p-4 text-center stat-card border-2 border-fuchsia-200">
-                <span class="material-icons text-fuchsia-600 text-3xl mb-2">groups</span>
-                <p class="text-2xl md:text-3xl font-bold text-fuchsia-800">${scores.length}</p>
+                <span class="material-icons text-fuchsia-600 text-3xl mb-1">groups</span>
+                <p class="text-3xl font-bold text-fuchsia-800">${scores.length}</p>
                 <p class="text-xs text-fuchsia-600 font-semibold">Participants</p>
               </div>
               <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 text-center stat-card border-2 border-green-200">
-                <span class="material-icons text-green-600 text-3xl mb-2">trending_up</span>
-                <p class="text-2xl md:text-3xl font-bold text-green-800">${avg}%</p>
+                <span class="material-icons text-green-600 text-3xl mb-1">trending_up</span>
+                <p class="text-3xl font-bold text-green-800">${avg}%</p>
                 <p class="text-xs text-green-600 font-semibold">Average</p>
               </div>
-              <div class="bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 rounded-xl p-4 text-center stat-card border-2 border-fuchsia-200">
-                <span class="material-icons text-fuchsia-600 text-3xl mb-2">workspace_premium</span>
-                <p class="text-2xl md:text-3xl font-bold text-fuchsia-800">${max}%</p>
-                <p class="text-xs text-fuchsia-600 font-semibold">Highest</p>
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center stat-card border-2 border-blue-200">
+                <span class="material-icons text-blue-600 text-3xl mb-1">workspace_premium</span>
+                <p class="text-3xl font-bold text-blue-800">${maxS}%</p>
+                <p class="text-xs text-blue-600 font-semibold">Highest</p>
               </div>
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 text-center stat-card border-2 border-orange-200">
-                <span class="material-icons text-orange-600 text-3xl mb-2">trending_down</span>
-                <p class="text-2xl md:text-3xl font-bold text-orange-800">${min}%</p>
+                <span class="material-icons text-orange-600 text-3xl mb-1">trending_down</span>
+                <p class="text-3xl font-bold text-orange-800">${minS}%</p>
                 <p class="text-xs text-orange-600 font-semibold">Lowest</p>
               </div>
             </div>
-            
-            <!-- Charts Grid -->
+
+            <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <!-- Score Distribution Pie Chart -->
-              <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 rounded-xl p-4 md:p-6 border-2 border-fuchsia-200">
-                <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
-                  <span class="material-icons text-fuchsia-600">pie_chart</span>
-                  Score Distribution
+              <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 rounded-xl p-4 border-2 border-fuchsia-200">
+                <h4 class="font-bold text-base text-gray-800 mb-3 flex items-center gap-2"><span class="material-icons text-fuchsia-600">pie_chart</span>Score Distribution</h4>
+                <div class="chart-container"><canvas id="pieChart${examIndex}"></canvas></div>
+              </div>
+              <div class="bg-gradient-to-br from-fuchsia-50 to-cyan-50 rounded-xl p-4 border-2 border-fuchsia-200">
+                <h4 class="font-bold text-base text-gray-800 mb-3 flex items-center gap-2"><span class="material-icons text-fuchsia-600">bar_chart</span>Grade Analysis</h4>
+                <div class="chart-container"><canvas id="barChart${examIndex}"></canvas></div>
+              </div>
+            </div>
+
+            ${scores.length > 0 ? `
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200 mb-6">
+              <h4 class="font-bold text-base text-gray-800 mb-3 flex items-center gap-2"><span class="material-icons text-green-600">show_chart</span>Score Trend</h4>
+              <div class="chart-container"><canvas id="lineChart${examIndex}"></canvas></div>
+            </div>` : ''}
+
+            <!-- Question accuracy -->
+            ${questions.length > 0 ? `
+            <div class="bg-gradient-to-br from-fuchsia-50 to-fuchsia-50 rounded-xl p-4 border-2 border-fuchsia-200 mb-6">
+              <h4 class="font-bold text-base text-gray-800 mb-3 flex items-center gap-2"><span class="material-icons text-fuchsia-600">psychology</span>Question-wise Accuracy</h4>
+              <div class="chart-container" style="height:${Math.max(260, questions.length*44)}px"><canvas id="questionChart${examIndex}"></canvas></div>
+            </div>` : ''}
+
+            <!-- Student submission table -->
+            <div class="bg-white rounded-xl overflow-hidden" style="border:2px solid #e5e7eb;">
+              <div class="px-4 py-3 flex flex-wrap items-center justify-between gap-2" style="background:#f9fafb;border-bottom:1px solid #e5e7eb;">
+                <h4 class="font-bold text-base text-gray-800 flex items-center gap-2">
+                  <span class="material-icons text-gray-600">table_view</span>
+                  Student Results
+                  <span id="sCount${examIndex}" class="text-xs font-normal text-gray-500 ml-1"></span>
                 </h4>
-                <div class="chart-container">
-                  <canvas id="pieChart${examIndex}"></canvas>
+                <div class="flex flex-wrap items-center gap-2">
+                  <input type="text" placeholder="Filter by name…"
+                    class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none"
+                    style="min-width:160px"
+                    oninput="filterAndPaginateTable('${examIndex}',this.value)">
+                  <button onclick="exportTableExcel('${examIndex}','${exam.id}','${exam.title.replace(/'/g,'')}')"
+                    style="background:#16a34a;color:#fff;border:none;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;">
+                    <span class="material-icons" style="font-size:15px;">table_chart</span>Excel
+                  </button>
                 </div>
               </div>
-              
-              <!-- Grade Distribution Bar Chart -->
-              <div class="bg-gradient-to-br from-fuchsia-50 to-cyan-50 rounded-xl p-4 md:p-6 border-2 border-fuchsia-200">
-                <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
-                  <span class="material-icons text-fuchsia-600">bar_chart</span>
-                  Grade Analysis
-                </h4>
-                <div class="chart-container">
-                  <canvas id="barChart${examIndex}"></canvas>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr style="background:#6b21a8;color:#fff;">
+                      <th class="px-3 py-2 text-left font-semibold" style="color:#fff;">#</th>
+                      <th class="px-3 py-2 text-left font-semibold" style="color:#fff;">Name</th>
+                      <th class="px-3 py-2 text-left font-semibold" style="color:#fff;">Dept</th>
+                      <th class="px-3 py-2 text-left font-semibold" style="color:#fff;">Reg No</th>
+                      <th class="px-3 py-2 text-center font-semibold" style="color:#fff;">Score</th>
+                      <th class="px-3 py-2 text-center font-semibold" style="color:#fff;">Status</th>
+                      <th class="px-3 py-2 text-center font-semibold" style="color:#fff;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sTbody${examIndex}"></tbody>
+                </table>
+              </div>
+              <!-- Pagination -->
+              <div class="px-4 py-2 flex items-center justify-between text-sm" style="border-top:1px solid #e5e7eb;background:#f9fafb;">
+                <span id="sPageInfo${examIndex}" class="text-gray-500"></span>
+                <div class="flex gap-1">
+                  <button id="sPrev${examIndex}" onclick="changePage('${examIndex}',-1)"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:12px;font-weight:600;">&#8592; Prev</button>
+                  <button id="sNext${examIndex}" onclick="changePage('${examIndex}',1)"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:12px;font-weight:600;">Next &#8594;</button>
                 </div>
               </div>
             </div>
-            
-            <!-- Performance Trends -->
-            ${scores.length > 0 ? `<div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 md:p-6 border-2 border-green-200 mb-6">
-              <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
-                <span class="material-icons text-green-600">show_chart</span>
-                Score Trend
-              </h4>
-              <div class="chart-container">
-                <canvas id="lineChart${examIndex}"></canvas>
-              </div>
-            </div>` : ''}
-            
-            <!-- Question-wise Accuracy -->
-            ${await renderQuestionAnalysis(exam.id, submissions || [], examIndex)}
           </div>
         </div>`;
-        
         examIndex++;
       }
-      
-      document.getElementById('analyticsPanel').innerHTML = html;
-      
-      // Create charts after HTML is rendered
+
+      document.getElementById('analyticsPanel').innerHTML = html || '<div class="text-gray-500 text-center py-8">No results match the current filter.</div>';
+
+      // Render charts
       examIndex = 0;
       for (const exam of exams) {
-        const { data: submissions } = await window.supabaseClient.from('submissions').select('*').eq('exam_id', exam.id);
-        const scores = submissions ? submissions.map(s => parseFloat(s.percentage || s.score || 0)) : [];
-        
+        let submissions = examSubmissionsCache[exam.id] || [];
+        if ((document.getElementById('deptFilter').value || document.getElementById('studentSearchInput').value)) {
+          const deptF = (document.getElementById('deptFilter').value||'').toLowerCase();
+          const stuF  = (document.getElementById('studentSearchInput').value||'').toLowerCase().trim();
+          submissions = submissions.filter(sub => {
+            const stu = allStudents.find(s => s.id === sub.student_id || s.id === String(sub.student_id));
+            if (!stu) return false;
+            return (!deptF || (stu.dept||'').toLowerCase()===deptF) &&
+                   (!stuF  || (stu.name||'').toLowerCase().includes(stuF) || (stu.reg_no||'').toLowerCase().includes(stuF));
+          });
+        }
+        const scores = submissions.map(s => parseFloat(s.percentage ?? s.score ?? 0));
         if (scores.length > 0) {
           createCharts(examIndex, scores);
-          await createQuestionChart(exam.id, submissions || [], examIndex);
         }
+        createQuestionChart(exam.id, submissions, examIndex);
+        initTableState(examIndex, submissions, exam.id);
         examIndex++;
       }
     }
-    
+
+    // ── Pagination state ───────────────────────────────────────────────────────
+    const tableState = {}; // examIndex -> { rows, filtered, page, perPage }
+
+    function initTableState(examIndex, submissions, examId) {
+      const sorted = [...submissions].sort((a,b) =>
+        parseFloat(b.percentage??b.score??0) - parseFloat(a.percentage??a.score??0));
+      tableState[examIndex] = { rows: sorted, filtered: sorted, page: 0, perPage: 10, examId };
+      renderTablePage(examIndex);
+    }
+
+    function renderTablePage(examIndex) {
+      const s = tableState[examIndex];
+      if (!s) return;
+      const { filtered, page, perPage, examId } = s;
+      const start = page * perPage, end = start + perPage;
+      const pageRows = filtered.slice(start, end);
+      const totalPages = Math.ceil(filtered.length / perPage) || 1;
+
+      const countEl    = document.getElementById('sCount' + examIndex);
+      const infoEl     = document.getElementById('sPageInfo' + examIndex);
+      const prevBtn    = document.getElementById('sPrev' + examIndex);
+      const nextBtn    = document.getElementById('sNext' + examIndex);
+      const tbody      = document.getElementById('sTbody' + examIndex);
+      if (!tbody) return;
+
+      if (countEl) countEl.textContent = `(${filtered.length})`;
+      if (infoEl)  infoEl.textContent  = `Page ${page+1} of ${totalPages}  (${filtered.length} students)`;
+      if (prevBtn) prevBtn.disabled = page === 0;
+      if (nextBtn) nextBtn.disabled = page >= totalPages - 1;
+
+      if (pageRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#9ca3af;">No submissions for this filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pageRows.map((sub, i) => {
+        const rank  = start + i;
+        const stu   = allStudents.find(s => s.id === sub.student_id || s.id === String(sub.student_id)) || {};
+        const score = parseFloat(sub.percentage ?? sub.score ?? 0).toFixed(1);
+        const passed = parseFloat(score) >= 60;
+        const autoSub = sub.auto_submitted;
+        let medal = '';
+        if (rank === 0) medal = ' 🥇';
+        else if (rank === 1) medal = ' 🥈';
+        else if (rank === 2) medal = ' 🥉';
+        const scoreBg  = passed ? 'background:#dcfce7;color:#166534;' : 'background:#fee2e2;color:#991b1b;';
+        const statusBg = autoSub ? 'background:#fef9c3;color:#854d0e;' : 'background:#dcfce7;color:#166534;';
+        return `<tr style="border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#fdf4ff'" onmouseout="this.style.background=''">
+          <td style="padding:8px 12px;color:#6b7280;">${rank+1}</td>
+          <td style="padding:8px 12px;font-weight:600;color:#111827;">${stu.name||'Unknown'}${medal}</td>
+          <td style="padding:8px 12px;color:#4b5563;">${stu.dept||'-'}</td>
+          <td style="padding:8px 12px;color:#4b5563;">${stu.reg_no||'-'}</td>
+          <td style="padding:8px 12px;text-align:center;">
+            <span style="font-weight:700;padding:2px 8px;border-radius:6px;font-size:13px;${scoreBg}">${score}%</span>
+          </td>
+          <td style="padding:8px 12px;text-align:center;">
+            <span style="font-size:11px;padding:3px 8px;border-radius:9999px;font-weight:600;${statusBg}">
+              ${autoSub ? 'Auto-Submitted' : 'Submitted'}
+            </span>
+          </td>
+          <td style="padding:8px 12px;text-align:center;">
+            <button onclick="openStudentModal('${sub.student_id}','${examId}')"
+              style="background:#9333ea;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+              <span class="material-icons" style="font-size:14px;">analytics</span>Analyse
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterAndPaginateTable(examIndex, query) {
+      const s = tableState[examIndex];
+      if (!s) return;
+      const q = query.toLowerCase().trim();
+      s.filtered = q
+        ? s.rows.filter(sub => {
+            const stu = allStudents.find(st => st.id === sub.student_id || st.id === String(sub.student_id)) || {};
+            return (stu.name||'').toLowerCase().includes(q) || (stu.reg_no||'').toLowerCase().includes(q);
+          })
+        : s.rows;
+      s.page = 0;
+      renderTablePage(examIndex);
+    }
+
+    function changePage(examIndex, delta) {
+      const s = tableState[examIndex];
+      if (!s) return;
+      const totalPages = Math.ceil(s.filtered.length / s.perPage) || 1;
+      s.page = Math.max(0, Math.min(s.page + delta, totalPages - 1));
+      renderTablePage(examIndex);
+    }
+
+    function exportTableExcel(examIndex, examId, examTitle) {
+      const s = tableState[examIndex];
+      if (!s) return;
+      const rows = [['#','Name','Department','Reg No','Score (%)','Status','Auto-Submitted','Violations']];
+      s.filtered.forEach((sub, i) => {
+        const stu   = allStudents.find(st => st.id === sub.student_id || st.id === String(sub.student_id)) || {};
+        const score = parseFloat(sub.percentage ?? sub.score ?? 0).toFixed(1);
+        rows.push([
+          i+1,
+          stu.name||'',
+          stu.dept||'',
+          stu.reg_no||'',
+          parseFloat(score),
+          parseFloat(score)>=60?'PASS':'FAIL',
+          sub.auto_submitted?'Yes':'No',
+          sub.violation_count||0
+        ]);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{wch:4},{wch:24},{wch:14},{wch:16},{wch:10},{wch:8},{wch:14},{wch:10}];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Results');
+      XLSX.writeFile(wb, `${(examTitle||'exam').replace(/\s+/g,'_').slice(0,40)}_results.xlsx`);
+    }
+
+    function buildStudentTableRows() { return ''; } // replaced by pagination system, kept for compat
+
+    // ── Charts ─────────────────────────────────────────────────────────────────
     function createCharts(examIndex, scores) {
-      // Calculate distribution
       const ranges = { '90-100': 0, '75-89': 0, '60-74': 0, '50-59': 0, '0-49': 0 };
       scores.forEach(s => {
         if (s >= 90) ranges['90-100']++;
@@ -297,443 +543,455 @@
         else if (s >= 50) ranges['50-59']++;
         else ranges['0-49']++;
       });
-      
-      // Pie Chart - Score Distribution
+      const colors = ['#10b981','#3b82f6','#eab308','#f97316','#ef4444'];
+
       const pieCtx = document.getElementById(`pieChart${examIndex}`);
       if (pieCtx) {
-        const pieChart = new Chart(pieCtx, {
+        chartInstances.push(new Chart(pieCtx, {
           type: 'doughnut',
-          data: {
-            labels: ['90-100%', '75-89%', '60-74%', '50-59%', '0-49%'],
-            datasets: [{
-              data: [ranges['90-100'], ranges['75-89'], ranges['60-74'], ranges['50-59'], ranges['0-49']],
-              backgroundColor: ['#10b981', '#3b82f6', '#eab308', '#f97316', '#ef4444'],
-              borderWidth: 2,
-              borderColor: '#ffffff'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: { padding: 15, font: { size: 11 } }
-              },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                    const percentage = ((context.parsed / total) * 100).toFixed(1);
-                    return context.label + ': ' + context.parsed + ' students (' + percentage + '%)';
-                  }
-                }
-              }
-            }
-          }
-        });
-        chartInstances.push(pieChart);
+          data: { labels:['90-100%','75-89%','60-74%','50-59%','0-49%'],
+            datasets:[{data:Object.values(ranges), backgroundColor:colors, borderWidth:2, borderColor:'#fff'}] },
+          options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{position:'bottom',labels:{padding:12,font:{size:11}}},
+              tooltip:{callbacks:{label:ctx => {
+                const t=ctx.dataset.data.reduce((a,b)=>a+b,0);
+                return `${ctx.label}: ${ctx.parsed} (${t?((ctx.parsed/t)*100).toFixed(1):0}%)`;
+              }}}}}
+        }));
       }
-      
-      // Bar Chart - Grade Distribution
+
       const barCtx = document.getElementById(`barChart${examIndex}`);
       if (barCtx) {
-        const barChart = new Chart(barCtx, {
+        chartInstances.push(new Chart(barCtx, {
           type: 'bar',
-          data: {
-            labels: ['90-100%', '75-89%', '60-74%', '50-59%', '0-49%'],
-            datasets: [{
-              label: 'Number of Students',
-              data: [ranges['90-100'], ranges['75-89'], ranges['60-74'], ranges['50-59'], ranges['0-49']],
-              backgroundColor: [
-                'rgba(16, 185, 129, 0.8)',
-                'rgba(59, 130, 246, 0.8)',
-                'rgba(234, 179, 8, 0.8)',
-                'rgba(249, 115, 22, 0.8)',
-                'rgba(239, 68, 68, 0.8)'
-              ],
-              borderColor: [
-                'rgb(16, 185, 129)',
-                'rgb(59, 130, 246)',
-                'rgb(234, 179, 8)',
-                'rgb(249, 115, 22)',
-                'rgb(239, 68, 68)'
-              ],
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return context.parsed.y + ' students';
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { stepSize: 1 }
-              }
-            }
-          }
-        });
-        chartInstances.push(barChart);
+          data: { labels:['90-100%','75-89%','60-74%','50-59%','0-49%'],
+            datasets:[{label:'Students', data:Object.values(ranges),
+              backgroundColor:colors.map(c=>c+'cc'), borderColor:colors, borderWidth:2}] },
+          options: { responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+        }));
       }
-      
-      // Line Chart - Score Trend
+
       const lineCtx = document.getElementById(`lineChart${examIndex}`);
       if (lineCtx) {
-        const sortedScores = [...scores].sort((a, b) => a - b);
-        const lineChart = new Chart(lineCtx, {
+        const sorted = [...scores].sort((a,b)=>a-b);
+        chartInstances.push(new Chart(lineCtx, {
           type: 'line',
-          data: {
-            labels: sortedScores.map((_, i) => `Student ${i + 1}`),
-            datasets: [{
-              label: 'Score (%)',
-              data: sortedScores,
-              borderColor: 'rgb(99, 102, 241)',
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
-              tension: 0.4,
-              fill: true,
-              pointBackgroundColor: sortedScores.map(s => s >= 60 ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'),
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: true, position: 'top' },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return 'Score: ' + context.parsed.y.toFixed(1) + '%';
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: { callback: function(value) { return value + '%'; } }
-              },
-              x: {
-                display: false
-              }
-            }
-          }
-        });
-        chartInstances.push(lineChart);
+          data: { labels: sorted.map((_,i)=>`#${i+1}`),
+            datasets:[{label:'Score (%)', data:sorted, borderColor:'rgb(99,102,241)',
+              backgroundColor:'rgba(99,102,241,0.1)', tension:0.4, fill:true,
+              pointBackgroundColor: sorted.map(s=>s>=60?'#10b981':'#ef4444'),
+              pointBorderColor:'#fff', pointBorderWidth:2, pointRadius:4}] },
+          options: { responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{display:true,position:'top'}},
+            scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}, x:{display:false}}}
+        }));
       }
     }
-    
-    async function renderQuestionAnalysis(examId, submissions, examIndex) {
-      const { data: questions } = await window.supabaseClient.from('questions').select('id,question_text,correct_answer').eq('exam_id', examId);
-      
-      if (!questions || questions.length === 0) {
-        return '<div class="text-gray-500 text-center py-4">No questions in this exam</div>';
+
+    function createQuestionChart(examId, submissions, examIndex) {
+      const questions = examQuestionsCache[examId] || [];
+      if (!questions.length) return;
+
+      const accuracies = [], labels = [], colors = [];
+      questions.forEach((q, i) => {
+        let correct = 0, total = 0;
+        submissions.forEach(sub => {
+          if (!sub.answers) return;
+          let ans = {};
+          try { ans = typeof sub.answers === 'string' ? JSON.parse(sub.answers) : sub.answers; } catch {}
+          const sa = ans[q.id];
+          if (sa !== undefined && sa !== null && sa !== '') {
+            total++;
+            const ca = q.correct_answer || q.expected_answer || '';
+            if (String(sa).trim().toUpperCase() === String(ca).trim().toUpperCase()) correct++;
+          }
+        });
+        const acc = total ? parseFloat(((correct/total)*100).toFixed(1)) : 0;
+        accuracies.push(acc);
+        // Full question text for label
+        const fullText = q.question_text || `Q${i+1}`;
+        labels.push(fullText.length > 80 ? fullText.substring(0,80)+'…' : fullText);
+        colors.push(acc >= 75 ? 'rgba(16,185,129,0.8)' : acc >= 50 ? 'rgba(234,179,8,0.8)' : 'rgba(239,68,68,0.8)');
+      });
+
+      const ctx = document.getElementById(`questionChart${examIndex}`);
+      if (!ctx) return;
+      chartInstances.push(new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets:[{label:'Accuracy (%)', data:accuracies, backgroundColor:colors, borderColor:colors.map(c=>c.replace('0.8','1')), borderWidth:2}] },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display:false },
+            tooltip: { callbacks: {
+              title: ctx => ctx[0].label,
+              label: ctx => `Accuracy: ${ctx.parsed.x}%  (${submissions.length} submissions)`
+            }}
+          },
+          scales: {
+            x: { beginAtZero:true, max:100, ticks:{callback:v=>v+'%'} },
+            y: { ticks: { font:{size:11}, callback: (_, i) => {
+                const t = labels[i] || '';
+                return t.length > 45 ? t.substring(0,45)+'…' : t;
+              }}}
+          }
+        }
+      }));
+    }
+
+    // ── Student Detail Modal ───────────────────────────────────────────────────
+    async function openStudentModal(studentId, examId) {
+      const stu  = allStudents.find(s => s.id === studentId || s.id === String(studentId)) || {};
+      const subs = (examSubmissionsCache[examId] || []).filter(s => s.student_id === studentId || String(s.student_id) === String(studentId));
+      const sub  = subs[0];
+      const exam = allExams.find(e => e.id === examId) || {};
+      const questions = examQuestionsCache[examId] || [];
+
+      document.getElementById('modalStudentName').textContent = stu.name || 'Unknown Student';
+      document.getElementById('modalStudentMeta').textContent =
+        `${stu.dept||''}  •  Reg: ${stu.reg_no||'-'}  •  ${exam.title||''}`;  
+
+      // Store for export
+      currentStudentData = { stu, sub, exam, questions, examId };
+
+      if (!sub) {
+        document.getElementById('studentModalBody').innerHTML =
+          '<div class="text-center py-12 text-gray-400"><span class="material-icons text-5xl">assignment_late</span><p class="mt-3 text-lg">This student has not submitted the exam.</p></div>';
+        document.getElementById('studentModal').classList.remove('hidden');
+        return;
       }
-      
-      return `<div class="bg-gradient-to-br from-fuchsia-50 to-fuchsia-50 rounded-xl p-4 md:p-6 border-2 border-fuchsia-200">
-        <h4 class="font-bold text-base md:text-lg text-gray-800 mb-4 flex items-center gap-2">
-          <span class="material-icons text-fuchsia-600">psychology</span>
-          Question-wise Accuracy
-        </h4>
-        <div class="chart-container" style="height: ${Math.max(250, questions.length * 40)}px;">
-          <canvas id="questionChart${examIndex}"></canvas>
+
+      let answers = {};
+      try { answers = typeof sub.answers === 'string' ? JSON.parse(sub.answers) : (sub.answers||{}); } catch {}
+
+      const score = parseFloat(sub.percentage ?? sub.score ?? 0).toFixed(1);
+      const passed = parseFloat(score) >= 60;
+
+      // Per-question breakdown
+      let correct=0, wrong=0, skipped=0;
+      const rowsHtml = questions.map((q,i) => {
+        const sa = answers[q.id];
+        const ca = q.correct_answer || q.expected_answer || '';
+        let badge, rowCls;
+        if (sa === undefined || sa === null || sa === '') {
+          badge = '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full font-semibold">Skipped</span>';
+          rowCls = 'bg-gray-50'; skipped++;
+        } else if (String(sa).trim().toUpperCase() === String(ca).trim().toUpperCase()) {
+          badge = '<span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-semibold">✓ Correct</span>';
+          rowCls = 'bg-green-50'; correct++;
+        } else {
+          badge = '<span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full font-semibold">✗ Wrong</span>';
+          rowCls = 'bg-red-50'; wrong++;
+        }
+        const typeBadge = { mcq:'MCQ', true_false:'T/F', short_answer:'Short', essay:'Essay', fill_blank:'Fill', matching:'Match', coding:'Code' }[q.type] || q.type;
+        return `<tr class="${rowCls} border-b">
+          <td class="px-3 py-2 text-gray-500 font-mono font-bold">Q${i+1}</td>
+          <td class="px-3 py-2 text-xs font-mono bg-gray-100 text-gray-600 rounded">${typeBadge}</td>
+          <td class="px-3 py-2 text-gray-800 font-medium text-sm">${q.question_text}</td>
+          <td class="px-3 py-2 text-sm text-blue-700">${sa !== undefined && sa !== null && sa !== '' ? sa : '<em class="text-gray-400">—</em>'}</td>
+          <td class="px-3 py-2 text-sm text-green-700 font-semibold">${ca || '<em class="text-gray-400">manual</em>'}</td>
+          <td class="px-3 py-2">${badge}</td>
+          <td class="px-3 py-2 text-center text-xs text-gray-500">${q.points||1}pt</td>
+        </tr>`;
+      }).join('');
+
+      const html = `
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="bg-fuchsia-50 border-2 border-fuchsia-200 rounded-xl p-3 text-center">
+          <div class="text-3xl font-extrabold ${passed?'text-green-700':'text-red-700'}">${score}%</div>
+          <div class="text-xs font-semibold text-gray-600 mt-1">Final Score</div>
+          <div class="text-xs mt-1 font-bold ${passed?'text-green-600':'text-red-600'}">${passed?'PASS':'FAIL'}</div>
+        </div>
+        <div class="bg-green-50 border-2 border-green-200 rounded-xl p-3 text-center">
+          <div class="text-3xl font-extrabold text-green-700">${correct}</div>
+          <div class="text-xs font-semibold text-gray-600 mt-1">Correct</div>
+        </div>
+        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-center">
+          <div class="text-3xl font-extrabold text-red-700">${wrong}</div>
+          <div class="text-xs font-semibold text-gray-600 mt-1">Wrong</div>
+        </div>
+        <div class="bg-gray-50 border-2 border-gray-200 rounded-xl p-3 text-center">
+          <div class="text-3xl font-extrabold text-gray-500">${skipped}</div>
+          <div class="text-xs font-semibold text-gray-600 mt-1">Skipped</div>
+        </div>
+      </div>
+      ${sub.violation_count ? `<div class="mb-4 bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-2 rounded-lg text-sm flex items-center gap-2"><span class="material-icons text-sm">warning</span>${sub.violation_count} violation(s) detected during exam. ${sub.auto_submitted?'<strong>Auto-submitted.</strong>':''}</div>` : ''}
+      <div class="overflow-x-auto rounded-xl border-2 border-gray-200">
+        <table class="w-full text-sm">
+          <thead class="bg-fuchsia-900 text-white text-xs">
+            <tr>
+              <th class="px-3 py-2 text-left">Q#</th>
+              <th class="px-3 py-2 text-left">Type</th>
+              <th class="px-3 py-2 text-left">Question</th>
+              <th class="px-3 py-2 text-left">Student Answer</th>
+              <th class="px-3 py-2 text-left">Correct Answer</th>
+              <th class="px-3 py-2 text-center">Result</th>
+              <th class="px-3 py-2 text-center">Pts</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+
+      document.getElementById('studentModalBody').innerHTML = html;
+      document.getElementById('studentModal').classList.remove('hidden');
+    }
+
+    function closeStudentModal(e) {
+      if (e.target === document.getElementById('studentModal'))
+        document.getElementById('studentModal').classList.add('hidden');
+    }
+
+    // ── Student Excel export (client-side via SheetJS) ─────────────────────────
+    function exportStudentExcel() {
+      const d = currentStudentData;
+      if (!d || !d.sub) { alert('No submission data to export.'); return; }
+      const { stu, sub, exam, questions } = d;
+      let answers = {};
+      try { answers = typeof sub.answers==='string'?JSON.parse(sub.answers):(sub.answers||{}); } catch {}
+
+      const rows = [
+        ['Student Name', stu.name||''],
+        ['Department',   stu.dept||''],
+        ['Reg No',       stu.reg_no||''],
+        ['Email',        stu.email||''],
+        ['Exam',         exam.title||''],
+        ['Score (%)',    parseFloat(sub.percentage??sub.score??0).toFixed(1)],
+        ['Status',       parseFloat(sub.percentage??sub.score??0)>=60?'PASS':'FAIL'],
+        ['Auto-Submit',  sub.auto_submitted?'Yes':'No'],
+        ['Violations',   sub.violation_count||0],
+        [],
+        ['Q#','Question','Type','Student Answer','Correct Answer','Result','Points']
+      ];
+
+      questions.forEach((q,i) => {
+        const sa = answers[q.id];
+        const ca = q.correct_answer||q.expected_answer||'';
+        let result = 'Skipped';
+        if (sa!==undefined&&sa!==null&&sa!=='') {
+          result = String(sa).trim().toUpperCase()===String(ca).trim().toUpperCase()?'Correct':'Wrong';
+        }
+        rows.push([`Q${i+1}`, q.question_text, q.type, sa??'', ca, result, q.points||1]);
+      });
+
+      const ws  = XLSX.utils.aoa_to_sheet(rows);
+      const wb  = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Report');
+      const safeName = (stu.name||'student').replace(/[^a-z0-9]/gi,'_').slice(0,30);
+      XLSX.writeFile(wb, `${safeName}_${(exam.title||'exam').replace(/\s+/g,'_').slice(0,30)}_report.xlsx`);
+    }
+
+    // ── Student PDF export ────────────────────────────────────────────────────
+    async function exportStudentPDF() {
+      const d = currentStudentData;
+      if (!d) return;
+      const btn = document.getElementById('modalPdfBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span class="material-icons text-sm animate-spin" style="display:inline-block">refresh</span> Generating…';
+      btn.disabled = true;
+      try {
+        const body = document.getElementById('studentModalBody');
+        const canvas = await html2canvas(body, { scale:2, useCORS:true, backgroundColor:'#fff' });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p','mm','a4');
+        const pW = pdf.internal.pageSize.getWidth();
+        const pH = pdf.internal.pageSize.getHeight();
+        const m = 8, imgW = pW-m*2, imgH = (canvas.height*imgW)/canvas.width;
+        let left = imgH, pos = m;
+        pdf.addImage(imgData,'PNG',m,pos,imgW,imgH,undefined,'FAST');
+        left -= (pH-m*2);
+        while (left > 0) {
+          pdf.addPage(); pos = m-(imgH-left);
+          pdf.addImage(imgData,'PNG',m,pos,imgW,imgH,undefined,'FAST');
+          left -= (pH-m*2);
+        }
+        const safeName = (d.stu.name||'student').replace(/[^a-z0-9]/gi,'_').slice(0,30);
+        pdf.save(`${safeName}_${(d.exam.title||'exam').replace(/\s+/g,'_').slice(0,30)}_report.pdf`);
+      } catch(e) { alert('PDF error: '+e.message); }
+      finally { btn.innerHTML=orig; btn.disabled=false; }
+    }
+
+    // ── Leaderboard modal ─────────────────────────────────────────────────────
+    function openLeaderboard(examId, btn) {
+      const exam = allExams.find(e=>e.id===examId||e.id===String(examId))||{};
+      const submissions = examSubmissionsCache[examId]||[];
+      const sorted = [...submissions].sort((a,b)=>parseFloat(b.percentage??b.score??0)-parseFloat(a.percentage??a.score??0));
+      const medals = ['🥇','🥈','🥉'];
+      const rows = sorted.slice(0,20).map((sub,i) => {
+        const stu = allStudents.find(s=>s.id===sub.student_id||s.id===String(sub.student_id))||{};
+        const score = parseFloat(sub.percentage??sub.score??0).toFixed(1);
+        return `<tr class="border-b hover:bg-fuchsia-50">
+          <td class="px-4 py-3 text-center font-bold text-lg">${medals[i]||`#${i+1}`}</td>
+          <td class="px-4 py-3 font-semibold">${stu.name||'Unknown'}</td>
+          <td class="px-4 py-3 text-gray-500">${stu.dept||'-'}</td>
+          <td class="px-4 py-3 text-gray-500">${stu.reg_no||'-'}</td>
+          <td class="px-4 py-3 text-center"><span class="font-bold px-3 py-1 rounded-lg ${parseFloat(score)>=60?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}">${score}%</span></td>
+        </tr>`;
+      }).join('');
+
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4';
+      modal.onclick = e => { if (e.target===modal) modal.remove(); }
+      modal.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div class="sticky top-0 bg-gradient-to-r from-yellow-500 to-yellow-400 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl">
+          <h3 class="text-xl font-bold flex items-center gap-2"><span class="material-icons">leaderboard</span>${exam.title} — Top ${Math.min(sorted.length,20)}</h3>
+          <button onclick="this.closest('.fixed').remove()" class="hover:bg-black hover:bg-opacity-20 rounded-full p-1"><span class="material-icons">close</span></button>
+        </div>
+        <div class="p-4 overflow-x-auto">
+          <table class="w-full text-sm"><thead class="bg-gray-100 text-gray-700"><tr>
+            <th class="px-4 py-2 text-center">Rank</th><th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Dept</th><th class="px-4 py-2 text-left">Roll</th>
+            <th class="px-4 py-2 text-center">Score</th>
+          </tr></thead><tbody>${rows||'<tr><td colspan=5 class="text-center py-6 text-gray-400">No submissions yet.</td></tr>'}</tbody></table>
         </div>
       </div>`;
+      document.body.appendChild(modal);
     }
-    
-    async function createQuestionChart(examId, submissions, examIndex) {
-      const { data: questions } = await window.supabaseClient.from('questions').select('id,question_text,correct_answer').eq('exam_id', examId);
-      
-      if (!questions || questions.length === 0) {
-        return;
-      }
-      
-      let questionAccuracies = [];
-      let questionLabels = [];
-      let questionColors = [];
-      
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        let correct = 0, total = 0;
-        for (const sub of submissions) {
-          if (!sub.answers) continue;
-          let ansObj = {};
-          try { ansObj = typeof sub.answers === 'string' ? JSON.parse(sub.answers) : sub.answers; } catch {}
-          if (ansObj[q.id] !== undefined) {
-            total++;
-            if (String(ansObj[q.id]).trim().toUpperCase() === String(q.correct_answer).trim().toUpperCase()) {
-              correct++;
-            }
-          }
-        }
-        const acc = total ? ((correct/total)*100).toFixed(1) : 0;
-        questionAccuracies.push(parseFloat(acc));
-        questionLabels.push(`Q${i + 1}`);
-        
-        if (acc >= 75) questionColors.push({ bg: 'rgba(16, 185, 129, 0.8)', border: 'rgb(16, 185, 129)' });
-        else if (acc >= 50) questionColors.push({ bg: 'rgba(234, 179, 8, 0.8)', border: 'rgb(234, 179, 8)' });
-        else questionColors.push({ bg: 'rgba(239, 68, 68, 0.8)', border: 'rgb(239, 68, 68)' });
-      }
-      
-      const ctx = document.getElementById(`questionChart${examIndex}`);
-      if (ctx) {
-        const chart = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: questionLabels,
-            datasets: [{
-              label: 'Accuracy (%)',
-              data: questionAccuracies,
-              backgroundColor: questionColors.map(c => c.bg),
-              borderColor: questionColors.map(c => c.border),
-              borderWidth: 2
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  title: function(context) {
-                    const qIndex = context[0].dataIndex;
-                    const qText = questions[qIndex].question_text;
-                    return qText.length > 60 ? qText.substring(0, 60) + '...' : qText;
-                  },
-                  label: function(context) {
-                    return 'Accuracy: ' + context.parsed.x + '%';
-                  }
-                }
-              }
-            },
-            scales: {
-              x: {
-                beginAtZero: true,
-                max: 100,
-                ticks: { callback: function(value) { return value + '%'; } }
-              }
-            }
-          }
-        });
-        chartInstances.push(chart);
-      }
+
+    // ── Filters ────────────────────────────────────────────────────────────────
+    function onDeptFilterChange() {
+      updateStudentAutocomplete();
+      renderExamCards(allExams);
     }
-    
-    // Old function kept for reference - can be removed
-    async function renderQuestionAnalysisOld(examId, submissions) {
-      const { data: questions } = await window.supabaseClient.from('questions').select('id,question_text,correct_answer').eq('exam_id', examId);
-      
-      if (!questions || questions.length === 0) {
-        return '<div class="text-gray-500 text-center py-4">No questions in this exam</div>';
-      }
-      
-      let html = `<div class="bg-fuchsia-50 rounded-lg md:rounded-xl p-4 md:p-6">
-        <h4 class="font-bold text-base md:text-xl text-gray-800 mb-3 md:mb-4 flex items-center gap-2">
-          <span class="material-icons text-fuchsia-600">quiz</span>
-          Question-wise Accuracy
-        </h4>
-        <div class="space-y-2 md:space-y-3">`;
-      
-      for (const q of questions) {
-        let correct = 0, total = 0;
-        for (const sub of submissions) {
-          if (!sub.answers) continue;
-          let ansObj = {};
-          try { ansObj = typeof sub.answers === 'string' ? JSON.parse(sub.answers) : sub.answers; } catch {}
-          if (ansObj[q.id] !== undefined) {
-            total++;
-            if (ansObj[q.id] === q.correct_answer) correct++;
-          }
-        }
-        const acc = total ? ((correct/total)*100).toFixed(1) : 0;
-        let color = 'bg-red-500';
-        if (acc >= 75) color = 'bg-green-500';
-        else if (acc >= 50) color = 'bg-yellow-500';
-        
-        html += `<div class="bg-white rounded-lg p-3 md:p-4 border border-gray-200">
-          <div class="flex justify-between items-start gap-2 mb-2">
-            <p class="text-xs md:text-sm font-semibold text-gray-800 flex-1">${q.question_text}</p>
-            <span class="text-xs md:text-sm font-bold whitespace-nowrap ${acc >= 75 ? 'text-green-600' : acc >= 50 ? 'text-yellow-600' : 'text-red-600'}">${acc}%</span>
-          </div>
-          <div class="flex items-center gap-2 text-xs text-gray-600 mb-2">
-            <span>${correct}/${total} correct</span>
-          </div>
-          <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div class="${color} h-2 rounded-full progress-bar" style="width: ${acc}%"></div>
-          </div>
-        </div>`;
-      }
-      
-      html += '</div></div>';
-      return html;
+
+    function onStudentSearchChange(val) {
+      updateStudentAutocomplete(val);
+      if (val.length === 0) renderExamCards(allExams);
     }
-    
-    // CSV Export function
-    document.getElementById('exportBtn').onclick = async () => {
-      const { data } = await window.supabaseClient.from('submissions').select('*');
-      if (!data || data.length === 0) {
-        alert('No submission data to export');
-        return;
+
+    function updateStudentAutocomplete(query) {
+      const q     = (query||document.getElementById('studentSearchInput').value||'').toLowerCase().trim();
+      const deptF = (document.getElementById('deptFilter').value||'').toLowerCase();
+      const list  = document.getElementById('studentAutoList');
+      if (!q) { list.classList.add('hidden'); return; }
+
+      const matches = allStudents.filter(s => {
+        const deptOk = !deptF || (s.dept||'').toLowerCase()===deptF;
+        return deptOk && ((s.name||'').toLowerCase().includes(q)||(s.reg_no||'').toLowerCase().includes(q));
+      }).slice(0,10);
+
+      if (!matches.length) { list.classList.add('hidden'); return; }
+      list.innerHTML = matches.map(s =>
+        `<li class="px-4 py-2 hover:bg-fuchsia-50 cursor-pointer flex items-center gap-2"
+          onclick="selectStudent('${s.name}')">
+          <span class="material-icons text-fuchsia-400 text-sm">person</span>
+          <span class="font-semibold text-gray-800">${s.name}</span>
+          <span class="text-xs text-gray-400 ml-auto">${s.dept||''} • ${s.reg_no||''}</span>
+        </li>`).join('');
+      list.classList.remove('hidden');
+    }
+
+    function selectStudent(name) {
+      document.getElementById('studentSearchInput').value = name;
+      document.getElementById('studentAutoList').classList.add('hidden');
+      renderExamCards(allExams);
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#studentSearchInput') && !e.target.closest('#studentAutoList')) {
+        document.getElementById('studentAutoList').classList.add('hidden');
       }
-      
-      // Convert to CSV
-      const headers = Object.keys(data[0]);
-      let csv = headers.join(',') + '\\n';
-      data.forEach(row => {
-        csv += headers.map(header => {
-          const value = row[header];
-          return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-        }).join(',') + '\\n';
-      });
-      
-      // Download
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `submissions_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-    };
-    
-    // ── Search / Filter exam cards ──────────────────────────────────────────
+    });
+
+    document.getElementById('studentSearchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        document.getElementById('studentAutoList').classList.add('hidden');
+        renderExamCards(allExams);
+      }
+    });
+
     function filterExamCards(query) {
       const term = query.trim().toLowerCase();
-      const cards = document.querySelectorAll('.exam-card');
-      let visible = 0;
-      cards.forEach(card => {
-        const title = card.getAttribute('data-exam-title') || '';
-        const show = !term || title.includes(term);
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
+      document.querySelectorAll('.exam-card').forEach(card => {
+        const title = card.getAttribute('data-exam-title')||'';
+        card.style.display = (!term||title.includes(term)) ? '' : 'none';
       });
-      const chipsEl = document.getElementById('filterChips');
-      const countEl = document.getElementById('filterCount');
-      if (term) {
-        chipsEl.style.display = 'flex';
-        chipsEl.innerHTML = `<span class="inline-flex items-center gap-1 bg-fuchsia-100 text-fuchsia-700 px-3 py-1 rounded-full text-xs font-semibold">
-          <span class="material-icons text-xs">filter_list</span>${query}
-          <button onclick="document.getElementById('examSearchInput').value='';filterExamCards('')" class="ml-1 hover:text-red-600 font-bold">&times;</button>
-        </span>`;
-        countEl.style.display = 'block';
-        countEl.textContent = `Showing ${visible} of ${cards.length} exam(s)`;
-      } else {
-        chipsEl.style.display = 'none';
-        chipsEl.innerHTML = '';
-        countEl.style.display = 'none';
-      }
+      const count = [...document.querySelectorAll('.exam-card')].filter(c=>c.style.display!=='none').length;
+      const el = document.getElementById('filterCount');
+      if (term) { el.classList.remove('hidden'); el.textContent=`Showing ${count} exam(s) matching "${query}"`; }
+      else { el.classList.add('hidden'); }
     }
 
-    function clearExamFilter() {
+    function clearAllFilters() {
       document.getElementById('examSearchInput').value = '';
-      filterExamCards('');
+      document.getElementById('deptFilter').value = '';
+      document.getElementById('studentSearchInput').value = '';
+      document.getElementById('filterCount').classList.add('hidden');
+      renderExamCards(allExams);
     }
 
-    // ── Per-exam student-wise Excel export ────────────────────────────────────
+    // ── Exam-level Excel (via Flask) ───────────────────────────────────────────
     async function exportExamStudentReport(examId, btn) {
       const origHTML = btn.innerHTML;
       btn.innerHTML = '<span class="material-icons text-sm animate-spin" style="display:inline-block">refresh</span> Generating…';
       btn.disabled = true;
       try {
         const resp = await fetch(`/api/exam_excel_report?exam_id=${encodeURIComponent(examId)}`);
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({ error: resp.statusText }));
-          alert('Export failed: ' + (err.error || resp.statusText));
-          return;
-        }
+        if (!resp.ok) { const err=await resp.json().catch(()=>({error:resp.statusText})); alert('Export failed: '+(err.error||resp.statusText)); return; }
         const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
         a.href = url;
-        const disp = resp.headers.get('Content-Disposition') || '';
+        const disp  = resp.headers.get('Content-Disposition')||'';
         const match = disp.match(/filename[^;=\n]*=(['"]?)([^;\n]+)\1/);
-        a.download = match ? match[2].trim() : `exam_${examId}_report.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        a.download  = match ? match[2].trim() : `exam_${examId}_report.xlsx`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
-      } catch (e) {
-        alert('Export error: ' + e.message);
-      } finally {
-        btn.innerHTML = origHTML;
-        btn.disabled = false;
-      }
+      } catch(e) { alert('Export error: '+e.message); }
+      finally { btn.innerHTML=origHTML; btn.disabled=false; }
     }
 
-    // ── Per-exam PDF report export ────────────────────────────────────
+    // ── Exam-level PDF (client-side) ───────────────────────────────────────────
     async function exportExamPDFReport(examId, btn) {
       const origHTML = btn.innerHTML;
       btn.innerHTML = '<span class="material-icons text-sm animate-spin" style="display:inline-block">refresh</span> Generating…';
       btn.disabled = true;
       let card = null;
       try {
-        card = btn.closest('.exam-card') || document.querySelector(`.exam-card[data-exam-id="${examId}"]`);
-        if (!card) {
-          alert('PDF export failed: exam card not found on page.');
-          return;
-        }
-
+        card = document.querySelector(`.exam-card[data-exam-id="${examId}"]`);
+        if (!card) { alert('Card not found.'); return; }
         card.classList.add('pdf-export-mode');
-        await new Promise(resolve => setTimeout(resolve, 120));
-
-        const canvas = await html2canvas(card, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          scrollY: -window.scrollY
-        });
-
+        await new Promise(r=>setTimeout(r,120));
+        const canvas = await html2canvas(card, {scale:2,useCORS:true,backgroundColor:'#fff',scrollY:-window.scrollY});
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 6;
-        const imgWidth = pageWidth - margin * 2;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        let heightLeft = imgHeight;
-        let position = margin;
-
-        pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= (pageHeight - margin * 2);
-
-        while (heightLeft > 0) {
-          pdf.addPage();
-          position = margin - (imgHeight - heightLeft);
-          pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-          heightLeft -= (pageHeight - margin * 2);
-        }
-
-        const titleEl = card.querySelector('h3');
-        const rawTitle = titleEl ? titleEl.textContent.trim() : `exam_${examId}`;
-        const safeTitle = rawTitle.replace(/[^a-z0-9-_ ]/gi, '').replace(/\s+/g, '_').slice(0, 60);
-        pdf.save(`${safeTitle || `exam_${examId}`}_analytics.pdf`);
-      } catch (e) {
-        alert('PDF export error: ' + e.message);
-      } finally {
-        if (card) {
-          card.classList.remove('pdf-export-mode');
-        }
-        btn.innerHTML = origHTML;
-        btn.disabled = false;
+        const pdf = new jsPDF('p','mm','a4');
+        const pW=pdf.internal.pageSize.getWidth(), pH=pdf.internal.pageSize.getHeight();
+        const m=6, iW=pW-m*2, iH=(canvas.height*iW)/canvas.width;
+        let left=iH, pos=m;
+        pdf.addImage(imgData,'PNG',m,pos,iW,iH,undefined,'FAST');
+        left-=(pH-m*2);
+        while(left>0){ pdf.addPage(); pos=m-(iH-left); pdf.addImage(imgData,'PNG',m,pos,iW,iH,undefined,'FAST'); left-=(pH-m*2); }
+        const rawTitle = card.querySelector('h3')?.textContent.trim()||`exam_${examId}`;
+        pdf.save(`${rawTitle.replace(/[^a-z0-9-_ ]/gi,'').replace(/\s+/g,'_').slice(0,60)}_analytics.pdf`);
+      } catch(e) { alert('PDF error: '+e.message); }
+      finally {
+        if (card) card.classList.remove('pdf-export-mode');
+        btn.innerHTML=origHTML; btn.disabled=false;
       }
     }
+
+    // ── All-submissions CSV export ─────────────────────────────────────────────
+    document.getElementById('exportBtn').onclick = async () => {
+      if (!allSubmissions.length) { alert('No submission data to export'); return; }
+      const headers = Object.keys(allSubmissions[0]);
+      let csv = headers.join(',') + '\n';
+      allSubmissions.forEach(row => {
+        csv += headers.map(h => {
+          const v = row[h];
+          return (typeof v==='string'&&v.includes(',')) ? `"${v}"` : v;
+        }).join(',') + '\n';
+      });
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href=url; a.download=`submissions_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+    };
 
     loadAnalytics();
   </script>
