@@ -176,7 +176,7 @@
         Management Console
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Create Exam Card -->
+        <!-- 1. Create Exam Card -->
         <a href="{{ url_for('create_exam') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-fuchsia-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
@@ -194,43 +194,7 @@
           </div>
         </a>
 
-        <!-- Manage Exams Card -->
-        <a href="{{ url_for('manage_exams') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-green-500">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <div class="bg-green-100 rounded-xl p-4 group-hover:bg-green-200 transition">
-                <span class="material-icons text-green-600 text-4xl">folder_open</span>
-              </div>
-              <span class="material-icons text-gray-400 group-hover:text-green-600 transition">arrow_forward</span>
-            </div>
-            <h4 class="font-bold text-xl text-gray-800 mb-2">Manage Exams</h4>
-            <p class="text-gray-600 text-sm">View, edit, delete, and organize all exams in the system</p>
-            <div class="mt-4 flex items-center gap-2 text-green-600 font-semibold text-sm">
-              <span>Manage Now</span>
-              <span class="material-icons text-sm">chevron_right</span>
-            </div>
-          </div>
-        </a>
-
-        <!-- Question Bank Card -->
-        <a href="{{ url_for('question_bank') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-purple-500">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <div class="bg-purple-100 rounded-xl p-4 group-hover:bg-purple-200 transition">
-                <span class="material-icons text-purple-600 text-4xl">library_books</span>
-              </div>
-              <span class="material-icons text-gray-400 group-hover:text-purple-600 transition">arrow_forward</span>
-            </div>
-            <h4 class="font-bold text-xl text-gray-800 mb-2">Resource Management</h4>
-            <p class="text-gray-600 text-sm">Post resources and documents which are useful for students</p>
-            <div class="mt-4 flex items-center gap-2 text-purple-600 font-semibold text-sm">
-              <span>Browse Resources</span>
-              <span class="material-icons text-sm">chevron_right</span>
-            </div>
-          </div>
-        </a>
-
-        <!-- Student Management Card -->
+        <!-- 2. Student Management Card -->
         <a href="{{ url_for('student_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-yellow-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
@@ -248,25 +212,7 @@
           </div>
         </a>
 
-        <!-- Live Monitoring Card -->
-        <a href="{{ url_for('live_monitoring') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-red-500">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <div class="bg-red-100 rounded-xl p-4 group-hover:bg-red-200 transition">
-                <span class="material-icons text-red-600 text-4xl">monitor</span>
-              </div>
-              <span class="material-icons text-gray-400 group-hover:text-red-600 transition">arrow_forward</span>
-            </div>
-            <h4 class="font-bold text-xl text-gray-800 mb-2">Live Monitoring</h4>
-            <p class="text-gray-600 text-sm">Monitor ongoing exams, track student activity in real-time</p>
-            <div class="mt-4 flex items-center gap-2 text-red-600 font-semibold text-sm">
-              <span>Monitor Now</span>
-              <span class="material-icons text-sm">chevron_right</span>
-            </div>
-          </div>
-        </a>
-
-        <!-- Results & Analytics Card -->
+        <!-- 3. Results & Analytics Card -->
         <a href="{{ url_for('results_analytics') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-indigo-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
@@ -284,25 +230,25 @@
           </div>
         </a>
 
-        <!-- User Management Card -->
-        <a href="{{ url_for('user_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-emerald-500">
+        <!-- 4. Resource Management Card -->
+        <a href="{{ url_for('question_bank') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-purple-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
-              <div class="bg-emerald-100 rounded-xl p-4 group-hover:bg-emerald-200 transition">
-                <span class="material-icons text-emerald-600 text-4xl">manage_accounts</span>
+              <div class="bg-purple-100 rounded-xl p-4 group-hover:bg-purple-200 transition">
+                <span class="material-icons text-purple-600 text-4xl">library_books</span>
               </div>
-              <span class="material-icons text-gray-400 group-hover:text-emerald-600 transition">arrow_forward</span>
+              <span class="material-icons text-gray-400 group-hover:text-purple-600 transition">arrow_forward</span>
             </div>
-            <h4 class="font-bold text-xl text-gray-800 mb-2">User Management</h4>
-            <p class="text-gray-600 text-sm">Create and manage admin accounts for portal access</p>
-            <div class="mt-4 flex items-center gap-2 text-emerald-600 font-semibold text-sm">
-              <span>Manage Users</span>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Resource Management</h4>
+            <p class="text-gray-600 text-sm">Post resources and documents which are useful for students</p>
+            <div class="mt-4 flex items-center gap-2 text-purple-600 font-semibold text-sm">
+              <span>Browse Resources</span>
               <span class="material-icons text-sm">chevron_right</span>
             </div>
           </div>
         </a>
 
-        <!-- Events Management Card -->
+        <!-- 5. Events Management Card -->
         <a href="{{ url_for('events_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-pink-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
@@ -320,7 +266,7 @@
           </div>
         </a>
 
-        <!-- Circulars Management Card -->
+        <!-- 6. Circulars Management Card -->
         <a href="{{ url_for('circulars_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-cyan-500">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
@@ -333,6 +279,60 @@
             <p class="text-gray-600 text-sm">Create and publish circulars, notices, and important announcements to students</p>
             <div class="mt-4 flex items-center gap-2 text-cyan-600 font-semibold text-sm">
               <span>Manage Circulars</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 7. Manage Exams Card -->
+        <a href="{{ url_for('manage_exams') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-green-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-green-100 rounded-xl p-4 group-hover:bg-green-200 transition">
+                <span class="material-icons text-green-600 text-4xl">folder_open</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-green-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Manage Exams</h4>
+            <p class="text-gray-600 text-sm">View, edit, delete, and organize all exams in the system</p>
+            <div class="mt-4 flex items-center gap-2 text-green-600 font-semibold text-sm">
+              <span>Manage Now</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 8. User Management Card -->
+        <a href="{{ url_for('user_management') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-emerald-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-emerald-100 rounded-xl p-4 group-hover:bg-emerald-200 transition">
+                <span class="material-icons text-emerald-600 text-4xl">manage_accounts</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-emerald-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">User Management</h4>
+            <p class="text-gray-600 text-sm">Create and manage admin accounts for portal access</p>
+            <div class="mt-4 flex items-center gap-2 text-emerald-600 font-semibold text-sm">
+              <span>Manage Users</span>
+              <span class="material-icons text-sm">chevron_right</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 9. Live Monitoring Card -->
+        <a href="{{ url_for('live_monitoring') }}" class="bg-white rounded-2xl shadow-lg hover-lift overflow-hidden group border-t-4 border-red-500">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-red-100 rounded-xl p-4 group-hover:bg-red-200 transition">
+                <span class="material-icons text-red-600 text-4xl">monitor</span>
+              </div>
+              <span class="material-icons text-gray-400 group-hover:text-red-600 transition">arrow_forward</span>
+            </div>
+            <h4 class="font-bold text-xl text-gray-800 mb-2">Live Monitoring</h4>
+            <p class="text-gray-600 text-sm">Monitor ongoing exams, track student activity in real-time</p>
+            <div class="mt-4 flex items-center gap-2 text-red-600 font-semibold text-sm">
+              <span>Monitor Now</span>
               <span class="material-icons text-sm">chevron_right</span>
             </div>
           </div>
